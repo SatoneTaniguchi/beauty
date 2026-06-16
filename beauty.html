@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VITA">
+<meta name="theme-color" content="#6f63c9">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>VITA — Beauty OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf8fc; --surface:#ffffff; --tint:#f1eefb;
+    --line:rgba(70,50,120,.09); --line2:rgba(70,50,120,.16);
+    --accent:#6f63c9; --accent-d:#564aa8; --rose:#d98cb0;
+    --ink:#2a2738; --ink2:#6a6480; --faint:#a7a1b8;
+    --good:#37a37c; --warn:#cf9333; --bad:#d75f64;
+    --r:22px; --r-sm:15px; --shadow:0 4px 20px rgba(90,70,160,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:15px;}
+  button{font-family:inherit;color:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:15px;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .serif{font-family:'DM Serif Display',serif;}
+
+  /* SPLASH */
+  #splash{position:fixed;inset:0;z-index:999;background:
+      radial-gradient(circle at 35% 25%,#efe9fb,transparent 55%),
+      radial-gradient(circle at 70% 80%,#fbeaf2,transparent 55%),var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .55s;}
+  #splash.hide{opacity:0;pointer-events:none;}
+  .sp-logo{font-family:'DM Serif Display',serif;font-size:56px;letter-spacing:-2px;}
+  .sp-logo span{color:var(--accent);font-style:italic;}
+  .sp-sub{color:var(--faint);font-size:11px;letter-spacing:.24em;text-transform:uppercase;}
+  .sp-bar{width:110px;height:2px;background:var(--line2);border-radius:2px;margin-top:22px;overflow:hidden;}
+  .sp-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--rose));animation:load 1.5s ease forwards;}
+  @keyframes load{from{width:0}to{width:100%}}
+
+  #app{height:100%;display:flex;flex-direction:column;}
+  .header{padding:max(env(safe-area-inset-top),18px) 22px 8px;display:flex;align-items:flex-end;justify-content:space-between;
+    background:linear-gradient(to bottom,var(--bg) 65%,transparent);position:relative;z-index:10;}
+  .h-logo{font-family:'DM Serif Display',serif;font-size:23px;}
+  .h-logo em{color:var(--accent);font-style:italic;}
+  .h-date{text-align:right;}
+  .h-date strong{display:block;font-size:13px;font-weight:600;}
+  .h-date span{font-size:11px;color:var(--faint);}
+
+  .content{flex:1;overflow-y:auto;overflow-x:hidden;
+    padding:10px 18px calc(env(safe-area-inset-bottom,18px) + 94px);scroll-behavior:smooth;}
+  .content::-webkit-scrollbar{display:none;}
+  .section{display:none;flex-direction:column;gap:16px;animation:fade .35s ease both;}
+  .section.active{display:flex;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .greeting{font-family:'DM Serif Display',serif;font-size:26px;line-height:1.25;margin:6px 2px 0;}
+  .greeting em{color:var(--accent);font-style:italic;}
+  .label{font-size:11px;letter-spacing:.06em;color:var(--faint);font-weight:500;margin:2px 0 0 2px;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);}
+  .card.flat{box-shadow:none;}
+  .row{display:flex;align-items:center;justify-content:space-between;}
+  .link{font-size:12.5px;color:var(--accent);font-weight:600;background:none;border:none;}
+  .ctitle{font-size:13px;font-weight:600;color:var(--ink2);}
+
+  /* INSIGHT panel (calm, single per screen) */
+  .insight{background:var(--tint);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;}
+  .insight .tag-ai{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--accent-d);margin-bottom:9px;}
+  .insight .tag-ai::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .insight p{font-size:14.5px;line-height:1.75;color:var(--ink2);}
+  .insight strong{color:var(--accent-d);font-weight:600;}
+
+  /* SCORE */
+  .score-row{display:flex;align-items:center;gap:20px;}
+  .ring-track{fill:none;stroke:var(--tint);stroke-width:9;}
+  .ring-prog{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1);}
+  .ring-num{font-family:'DM Serif Display',serif;text-anchor:middle;dominant-baseline:middle;fill:var(--ink);}
+  .ring-cap{font-size:9px;letter-spacing:.1em;text-anchor:middle;dominant-baseline:middle;fill:var(--faint);}
+  .score-grade{font-family:'DM Serif Display',serif;font-size:22px;}
+  .score-sub{font-size:13px;margin-top:3px;}
+  .up{color:var(--good);} .dn{color:var(--bad);} .flat{color:var(--faint);}
+  .score-note{font-size:12.5px;color:var(--ink2);margin-top:9px;line-height:1.6;}
+
+  .pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .ipill{font-size:11px;background:var(--tint);border:1px solid var(--line);color:var(--accent-d);border-radius:8px;padding:4px 10px;}
+
+  /* METRICS */
+  .metrics{display:flex;flex-direction:column;gap:13px;}
+  .m-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .m-name{font-size:13px;color:var(--ink2);}
+  .m-val{font-size:13px;font-weight:600;}
+  .bar{height:6px;background:var(--tint);border-radius:6px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:6px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1);}
+
+  /* areas */
+  .areas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .area{text-align:center;background:var(--tint);border-radius:var(--r-sm);padding:12px 6px;}
+  .area b{font-family:'DM Serif Display',serif;font-size:21px;display:block;}
+  .area span{font-size:10.5px;color:var(--faint);}
+
+  /* skin age chip */
+  .agechip{display:inline-flex;align-items:baseline;gap:4px;background:var(--surface);border:1px solid var(--line2);
+    border-radius:12px;padding:8px 14px;}
+  .agechip b{font-family:'DM Serif Display',serif;font-size:24px;color:var(--accent-d);}
+  .agechip span{font-size:11px;color:var(--faint);}
+
+  /* compare */
+  .cmp{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);}
+  .cmp b{font-weight:600;}
+
+  /* TREND */
+  .trend{display:flex;align-items:flex-end;gap:8px;height:96px;}
+  .t-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end;height:100%;}
+  .t-bar{width:100%;max-width:24px;border-radius:7px 7px 4px 4px;background:linear-gradient(var(--rose),var(--accent));
+    transition:height .7s cubic-bezier(.4,0,.2,1);min-height:5px;}
+  .t-bar.last{background:linear-gradient(var(--rose),var(--accent-d));}
+  .t-lab{font-size:9px;color:var(--faint);}
+  .t-sc{font-size:10px;color:var(--ink2);font-weight:600;}
+
+  /* HISTORY */
+  .hist{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+  .hcell{aspect-ratio:1;border-radius:var(--r-sm);background:var(--tint);border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .hcell b{font-family:'DM Serif Display',serif;font-size:22px;}
+  .hcell span{font-size:9px;color:var(--faint);}
+  .hcell.add{border:1px dashed var(--line2);color:var(--accent);}
+  .hcell.add b{font-weight:400;}
+
+  /* mini stats */
+  .mini3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+  .mini{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;box-shadow:var(--shadow);}
+  .mini .mi{font-size:16px;}
+  .mini b{font-family:'DM Serif Display',serif;font-size:21px;display:block;margin-top:4px;line-height:1;}
+  .mini b small{font-size:11px;color:var(--faint);font-family:'DM Sans';}
+  .mini span{font-size:10.5px;color:var(--faint);display:block;margin-top:3px;}
+
+  /* alerts / list rows */
+  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);}
+  .lrow:last-child{border-bottom:none;padding-bottom:0;}
+  .lrow:first-child{padding-top:0;}
+  .lico{width:40px;height:40px;border-radius:12px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+  .linfo{flex:1;min-width:0;}
+  .lname{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lsub{font-size:11.5px;color:var(--faint);margin-top:2px;}
+  .pill{font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:99px;flex-shrink:0;white-space:nowrap;}
+  .pill.good{background:rgba(55,163,124,.12);color:var(--good);}
+  .pill.warn{background:rgba(207,147,51,.14);color:#a9781f;}
+  .pill.bad{background:rgba(215,95,100,.13);color:var(--bad);}
+
+  /* DIET */
+  .cal-hero{display:flex;align-items:center;gap:20px;}
+  .cal-side{flex:1;display:flex;flex-direction:column;gap:9px;}
+  .cal-line{display:flex;justify-content:space-between;font-size:13px;}
+  .cal-line span{color:var(--faint);} .cal-line b{font-weight:600;}
+  .cal-rem{font-family:'DM Serif Display',serif;font-size:18px;}
+  .pfc{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px;}
+  .pfc .pf{font-size:11px;color:var(--faint);}
+  .pfc .pv{font-size:13px;font-weight:600;margin-top:1px;}
+  .weight-bar{position:relative;height:8px;background:var(--tint);border-radius:8px;margin:14px 0 6px;}
+  .weight-bar i{position:absolute;top:0;left:0;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--rose),var(--accent));}
+  .weight-pin{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);transform:translateX(-50%);}
+  .weight-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);}
+
+  .sugg{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);}
+  .sugg:last-child{border-bottom:none;padding-bottom:0;}
+  .sugg:first-child{padding-top:2px;}
+  .sugg-ico{width:42px;height:42px;border-radius:12px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .sugg-b{flex:1;min-width:0;}
+  .sugg-n{font-size:13.5px;font-weight:600;}
+  .sugg-m{font-size:11.5px;color:var(--faint);margin-top:2px;}
+  .sugg-tag{font-size:10px;color:var(--accent-d);background:var(--tint);border-radius:6px;padding:2px 7px;margin-top:5px;display:inline-block;}
+  .sugg-k{font-family:'DM Serif Display',serif;font-size:17px;align-self:center;flex-shrink:0;}
+  .sugg-k small{font-size:10px;color:var(--faint);font-family:'DM Sans';}
+
+  /* INVENTORY */
+  .inv4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+  .inv-s{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 6px;text-align:center;box-shadow:var(--shadow);}
+  .inv-s b{font-family:'DM Serif Display',serif;font-size:21px;display:block;line-height:1;}
+  .inv-s span{font-size:9.5px;color:var(--faint);display:block;margin-top:5px;}
+  .inv-s.warn b{color:var(--warn);} .inv-s.bad b{color:var(--bad);}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:1px;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex-shrink:0;font-size:12.5px;padding:7px 14px;border-radius:99px;background:var(--surface);
+    border:1px solid var(--line2);color:var(--ink2);white-space:nowrap;transition:.15s;}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .prod{display:flex;gap:13px;padding:15px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:var(--shadow);}
+  .prod:active{transform:scale(.99);}
+  .pthumb{width:50px;height:50px;border-radius:13px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0;}
+  .pbody{flex:1;min-width:0;}
+  .ptop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+  .pname{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pbrand{font-size:11px;color:var(--faint);margin-top:1px;}
+  .pings{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+  .ing{font-size:10px;background:var(--tint);color:var(--accent-d);border-radius:6px;padding:2px 7px;}
+  .pstock{margin-top:9px;}
+  .pstock .lab{font-size:9.5px;color:var(--faint);margin-bottom:3px;}
+
+  /* BUTTONS */
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:var(--accent);color:#fff;
+    font-weight:600;font-size:15px;border:none;border-radius:16px;padding:16px;transition:.15s;
+    box-shadow:0 6px 18px rgba(111,99,201,.26);}
+  .btn:active{transform:scale(.98);}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line2);box-shadow:var(--shadow);}
+  .btn.sm{padding:13px;font-size:14px;box-shadow:none;}
+  .btn.mini{width:auto;padding:9px 15px;font-size:13px;box-shadow:none;}
+
+  /* NAV */
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;
+    background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid var(--line);padding:8px 6px calc(env(safe-area-inset-bottom,8px) + 4px);}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;background:none;border:none;}
+  .nav-ico{font-size:19px;filter:grayscale(.5) opacity(.55);transition:.15s;}
+  .nav-lab{font-size:9px;color:var(--faint);transition:.15s;}
+  .nav-item.active .nav-ico{filter:none;transform:translateY(-1px);}
+  .nav-item.active .nav-lab{color:var(--accent-d);font-weight:600;}
+  .fab-wrap{flex:1;display:flex;align-items:center;justify-content:center;}
+  .fab{width:54px;height:54px;border-radius:50%;border:none;margin-top:-18px;color:#fff;font-size:26px;font-weight:300;
+    background:linear-gradient(135deg,var(--accent),var(--rose));box-shadow:0 8px 22px rgba(111,99,201,.4);
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .fab:active{transform:scale(.92);}
+
+  /* SHEET */
+  .overlay{position:fixed;inset:0;z-index:100;background:rgba(40,30,70,.38);display:flex;align-items:flex-end;
+    opacity:0;pointer-events:none;transition:opacity .3s;}
+  .overlay.show{opacity:1;pointer-events:all;}
+  .sheet{background:var(--surface);border-radius:28px 28px 0 0;width:100%;max-height:92vh;overflow-y:auto;
+    padding:24px 20px calc(env(safe-area-inset-bottom,18px) + 20px);
+    transform:translateY(100%);transition:transform .35s cubic-bezier(.32,0,.15,1.1);}
+  .sheet::-webkit-scrollbar{display:none;}
+  .overlay.show .sheet{transform:none;}
+  .handle{width:38px;height:4px;border-radius:4px;background:var(--line2);margin:0 auto 20px;}
+  .stitle{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:5px;}
+  .ssub{font-size:13px;color:var(--faint);margin-bottom:20px;line-height:1.55;}
+
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .opt{background:var(--tint);border:1px solid var(--line);border-radius:16px;padding:18px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:.15s;}
+  .opt:active{transform:scale(.96);}
+  .opt b{font-size:13.5px;font-weight:600;} .opt span{font-size:10.5px;color:var(--faint);} .opt .oi{font-size:26px;}
+
+  .lens{width:100%;height:200px;border-radius:18px;position:relative;overflow:hidden;
+    background:radial-gradient(circle at 50% 42%,#f3ecfb,#ece5f8);display:flex;align-items:center;justify-content:center;
+    font-size:64px;margin-bottom:16px;}
+  .scan{position:absolute;left:8%;right:8%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    box-shadow:0 0 14px var(--accent);top:8%;display:none;}
+  .lens.on .scan{display:block;animation:scan 1.3s ease-in-out infinite;}
+  @keyframes scan{0%{top:8%}50%{top:90%}100%{top:8%}}
+  .scan-txt{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--accent-d);
+    background:rgba(255,255,255,.85);padding:5px 14px;border-radius:99px;display:none;}
+  .lens.on .scan-txt{display:block;}
+  .lens-prog{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);width:0;transition:width .4s;}
+
+  .field{margin-bottom:15px;}
+  .field label{display:block;font-size:11px;color:var(--faint);margin-bottom:7px;}
+  .field input,.field select{width:100%;padding:12px 14px;border-radius:13px;border:1px solid var(--line2);background:var(--tint);outline:none;}
+  .field input:focus{border-color:var(--accent);background:#fff;}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg button{flex:1;min-width:62px;padding:10px;border-radius:12px;border:1px solid var(--line2);background:var(--tint);
+    font-size:12.5px;color:var(--ink2);transition:.15s;}
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+
+  .divider{height:1px;background:var(--line);margin:16px 0;}
+  .kv{display:flex;justify-content:space-between;font-size:13.5px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .kv:last-child{border-bottom:none;}
+  .kv span{color:var(--faint);}
+  .stepper{display:inline-flex;align-items:center;gap:16px;}
+  .stepper button{width:32px;height:32px;border-radius:10px;border:1px solid var(--line2);background:var(--tint);font-size:18px;}
+
+  /* dictionary */
+  .dsearch{width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--line2);background:var(--tint);outline:none;margin-bottom:12px;}
+  .dsearch:focus{border-color:var(--accent);background:#fff;}
+  .ditem{border-bottom:1px solid var(--line);padding:14px 0;}
+  .ditem:last-child{border-bottom:none;}
+  .dhead{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .dname{font-size:15px;font-weight:600;}
+  .dbenefit{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.55;}
+  .dtags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+  .dtag{font-size:10px;background:var(--tint);color:var(--accent-d);border-radius:6px;padding:2px 8px;}
+  .ddetail{font-size:12.5px;color:var(--ink2);line-height:1.65;margin-top:9px;display:none;}
+  .ditem.open .ddetail{display:block;}
+  .dcaution{font-size:11.5px;color:#a9781f;background:rgba(207,147,51,.1);border-radius:9px;padding:8px 11px;margin-top:8px;display:none;}
+  .ditem.open .dcaution{display:block;}
+  .dchev{color:var(--faint);font-size:13px;transition:.2s;}
+  .ditem.open .dchev{transform:rotate(180deg);}
+
+  .toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);z-index:200;background:var(--ink);color:#fff;
+    font-size:13px;font-weight:500;padding:12px 20px;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.2);
+    animation:tin .3s ease both;white-space:nowrap;}
+  @keyframes tin{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+  .demo-chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--faint);background:var(--tint);
+    border:1px solid var(--line);border-radius:99px;padding:5px 12px;align-self:center;}
+
+  /* workout hero + queue */
+  .wk-hero{display:flex;gap:14px;align-items:center;}
+  .wk-thumb{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;color:#fff;}
+  .wk-thumb.yt{background:linear-gradient(135deg,#e0696c,#b9445f);}
+  .wk-thumb.ig{background:linear-gradient(135deg,#d98cb0,#9b6dd0);}
+  .wk-thumb.other{background:linear-gradient(135deg,var(--accent),var(--rose));}
+  .wk-meta{flex:1;min-width:0;}
+  .wk-title{font-size:15px;font-weight:600;line-height:1.35;}
+  .wk-sub{font-size:11.5px;color:var(--faint);margin-top:3px;}
+  .wk-actions{display:flex;gap:10px;margin-top:14px;}
+  .wk-play{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+    background:var(--accent);color:#fff;font-weight:600;font-size:15px;border-radius:14px;padding:14px;border:none;
+    box-shadow:0 6px 16px rgba(111,99,201,.26);}
+  .wk-play:active{transform:scale(.98);}
+  .wk-2min{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--tint);border:1px solid var(--line2);
+    color:var(--accent-d);font-weight:600;font-size:13.5px;border-radius:14px;padding:14px 16px;}
+  .wk-done{width:100%;margin-top:10px;background:var(--surface);border:1px solid var(--line2);color:var(--good);
+    font-weight:600;font-size:14px;border-radius:14px;padding:13px;}
+  .wk-streak{display:inline-flex;align-items:center;gap:5px;}
+  .vrow{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .vrow:last-child{border-bottom:none;}
+  .vrow .vt{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0;}
+  .vrow .vi{flex:1;min-width:0;}
+  .vrow .vn{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .vrow .vs{font-size:10.5px;color:var(--faint);margin-top:1px;}
+  .vrow.done .vn{color:var(--faint);text-decoration:line-through;}
+  .vgo{font-size:12px;color:var(--accent);font-weight:600;text-decoration:none;background:none;border:none;}
+  .vdel{font-size:15px;color:var(--faint);background:none;border:none;padding:4px;}
+  /* mini timer */
+  .timer-num{font-family:'DM Serif Display',serif;font-size:80px;text-align:center;letter-spacing:-2px;color:var(--accent-d);margin:10px 0;}
+  .timer-ring{display:block;margin:0 auto 4px;}
+  .empty{text-align:center;color:var(--faint);font-size:12.5px;padding:14px 0;}
+  /* charts */
+  .lc{width:100%;height:140px;display:block;}
+  .xlabels{display:flex;justify-content:space-between;font-size:9px;color:var(--faint);margin-top:4px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--ink2);margin-top:12px;}
+  .legend i{display:inline-block;width:13px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+  .phasebars{display:flex;gap:10px;align-items:flex-end;height:96px;margin-top:6px;}
+  .pb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end;height:100%;}
+  .pb i{width:100%;max-width:36px;border-radius:7px 7px 4px 4px;transition:height .7s cubic-bezier(.4,0,.2,1);min-height:5px;}
+  .pb .pbv{font-size:11px;font-weight:600;}
+  .pb .pbl{font-size:9.5px;color:var(--faint);text-align:center;line-height:1.3;}
+  .cyc-status{display:flex;align-items:center;gap:16px;}
+  .cyc-day{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent-d);line-height:1;}
+  .cyc-phase{font-size:13px;font-weight:600;margin-top:2px;}
+  .cyc-next{font-size:12px;color:var(--faint);margin-top:3px;}
+  /* photos */
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .photo-cell{aspect-ratio:3/4;border-radius:12px;overflow:hidden;position:relative;background:var(--tint);}
+  .photo-cell img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-cell .pd{position:absolute;left:0;right:0;bottom:0;font-size:9px;color:#fff;background:rgba(0,0,0,.4);padding:3px 6px;}
+  .photo-cell.add{display:flex;align-items:center;justify-content:center;border:1px dashed var(--line2);color:var(--accent);font-size:26px;}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
+  .cmp-col .cl{font-size:11px;color:var(--faint);margin-bottom:6px;text-align:center;}
+  .cmp-col img{width:100%;border-radius:14px;display:block;aspect-ratio:3/4;object-fit:cover;background:var(--tint);}
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-h{font-size:10px;color:var(--faint);text-align:center;padding:3px 0;}
+  .cal-d{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;background:var(--tint);}
+  .cal-d.blank{background:transparent;}
+  .cal-d.today{outline:2px solid var(--accent);outline-offset:-2px;}
+  .cal-dots{display:flex;gap:2px;height:5px;}
+  .cal-dots i{width:5px;height:5px;border-radius:50%;display:block;}
+  .streak-row{display:flex;gap:10px;margin-bottom:14px;}
+  .streak-box{flex:1;background:var(--tint);border-radius:14px;padding:13px;text-align:center;}
+  .streak-box b{font-family:'DM Serif Display',serif;font-size:25px;display:block;line-height:1;}
+  .streak-box span{font-size:10.5px;color:var(--faint);display:block;margin-top:4px;}
+  /* uv */
+  .uv-badge{width:56px;height:56px;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
+  .uv-badge b{font-family:'DM Serif Display',serif;font-size:23px;line-height:1;}
+  .uv-badge span{font-size:8px;letter-spacing:.05em;}
+  /* 成果ヒーロー */
+  .hero{background:linear-gradient(135deg,#6f63c9,#9b7bc2 55%,#d98cb0);border-radius:22px;padding:18px 20px 20px;color:#fff;box-shadow:0 12px 30px -12px rgba(111,99,201,.55);margin-bottom:16px;}
+  .hero-msg{font-size:13.5px;font-weight:600;margin-bottom:14px;opacity:.97;}
+  .hero-row{display:flex;gap:10px;}
+  .hk{flex:1;background:rgba(255,255,255,.14);border-radius:14px;padding:11px 8px;text-align:center;}
+  .hk b{font-family:'DM Serif Display',serif;font-size:25px;line-height:1;display:block;}
+  .hk span{font-size:10px;opacity:.85;display:block;margin-top:5px;}
+  .hk .hk-d{font-size:10.5px;font-weight:600;display:block;margin-top:4px;min-height:13px;}
+  .hero-bar{height:7px;border-radius:5px;background:rgba(255,255,255,.22);margin:15px 0 7px;overflow:hidden;}
+  .hero-bar i{display:block;height:100%;background:#fff;border-radius:5px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1);}
+  .hero-foot{font-size:11px;opacity:.9;text-align:right;}
+
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="sp-logo">VIT<span>A</span></div>
+  <div class="sp-sub">Beauty OS</div>
+  <div class="sp-bar"><i></i></div>
+</div>
+
+<div id="app">
+  <header class="header">
+    <div class="h-logo">VIT<em>A</em></div>
+    <div class="h-date"><strong id="hd-wd">—</strong><span id="hd-d">—</span></div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== HOME ===== -->
+    <section class="section active" id="sec-home">
+      <div class="greeting">おはよう。<br><em>今日の肌、整えよう。</em></div>
+      <div id="home-profile" style="display:none"></div>
+
+      <!-- 成果ヒーロー -->
+      <div class="hero">
+        <div class="hero-msg" id="hero-msg">—</div>
+        <div class="hero-row">
+          <div class="hk"><b id="hk-skin">—</b><span>肌スコア</span><i id="hk-skin-d" class="hk-d"></i></div>
+          <div class="hk"><b id="hk-weight">—</b><span>開始から</span><i id="hk-weight-d" class="hk-d"></i></div>
+          <div class="hk"><b id="hk-streak">—</b><span>連続記録</span><i id="hk-streak-d" class="hk-d"></i></div>
+        </div>
+        <div class="hero-bar"><i id="hk-goalbar"></i></div>
+        <div class="hero-foot" id="hk-goal">—</div>
+      </div>
+
+      <div class="card" onclick="go('skin')">
+        <div class="row" style="margin-bottom:14px"><div class="ctitle">今日の肌スコア</div><span class="link">スキン →</span></div>
+        <div class="score-row">
+          <svg width="98" height="98" viewBox="0 0 98 98">
+            <circle class="ring-track" cx="49" cy="49" r="40"/>
+            <circle id="home-ring" class="ring-prog" cx="49" cy="49" r="40" stroke="url(#g)" stroke-dasharray="251" stroke-dashoffset="251" transform="rotate(-90 49 49)"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f63c9"/><stop offset="1" stop-color="#d98cb0"/></linearGradient></defs>
+            <text id="home-num" class="ring-num" x="49" y="46" style="font-size:30px">—</text>
+            <text class="ring-cap" x="49" y="63">/ 100</text>
+          </svg>
+          <div style="flex:1">
+            <div class="score-grade" id="home-grade">—</div>
+            <div class="score-sub" id="home-delta">—</div>
+            <div class="score-note" id="home-note"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <div class="tag-ai">AI ビューティ提案</div>
+        <p id="home-advice">—</p>
+      </div>
+
+      <!-- 天気・UV -->
+      <div class="card" id="home-weather"></div>
+
+      <div class="label">からだ</div>
+      <div class="mini3" id="home-mini"></div>
+    </section>
+
+    <!-- ===== SKIN ===== -->
+    <section class="section" id="sec-skin">
+      <div class="label">スキン・アナリティクス</div>
+      <button class="btn" onclick="openAnalyze()"><span style="font-size:18px">🔬</span> 肌を解析する</button>
+
+      <div class="card" id="skin-latest">
+        <div class="row" style="margin-bottom:14px">
+          <div class="ctitle">最新の解析 <button class="link" style="margin-left:6px" onclick="editLatest()">✏️補正</button></div>
+          <div class="agechip"><b id="skin-age">—</b><span>肌年齢</span></div>
+        </div>
+        <div class="score-row" style="margin-bottom:16px">
+          <svg width="86" height="86" viewBox="0 0 98 98">
+            <circle class="ring-track" cx="49" cy="49" r="40"/>
+            <circle id="skin-ring" class="ring-prog" cx="49" cy="49" r="40" stroke="url(#g)" stroke-dasharray="251" stroke-dashoffset="251" transform="rotate(-90 49 49)"/>
+            <text id="skin-num" class="ring-num" x="49" y="46" style="font-size:26px">—</text>
+            <text class="ring-cap" x="49" y="63">/ 100</text>
+          </svg>
+          <div style="flex:1">
+            <div class="score-grade" id="skin-grade">—</div>
+            <div class="score-sub flat" id="skin-when"></div>
+          </div>
+        </div>
+        <div class="label" style="margin:0 0 9px">部位別</div>
+        <div class="areas" id="skin-areas"></div>
+        <div class="divider"></div>
+        <div class="metrics" id="skin-metrics"></div>
+        <div class="divider"></div>
+        <div class="cmp" id="skin-cmp"></div>
+      </div>
+
+      <!-- 肌日記 -->
+      <div class="card">
+        <div class="row" style="margin-bottom:14px">
+          <div class="ctitle">肌日記</div>
+          <button class="link" onclick="openDailyLog()">📝 記録</button>
+        </div>
+        <div id="diary-list"></div>
+        <div style="text-align:center;margin-top:12px"><button class="link" onclick="openDiary()">すべての日記を見る →</button></div>
+      </div>
+
+      <!-- 分析・レポート（一覧に集約） -->
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:6px">分析・レポート</div>
+        <div class="lrow" onclick="openCalendar()"><div class="lico">📅</div><div class="linfo"><div class="lname">記録カレンダー</div><div class="lsub">連続日数・記録した日</div></div><span style="color:var(--faint)">›</span></div>
+        <div class="lrow" onclick="openCycle()"><div class="lico">📊</div><div class="linfo"><div class="lname">周期 × 肌</div><div class="lsub">生理と肌調子の関係グラフ</div></div><span style="color:var(--faint)">›</span></div>
+        <div class="lrow" onclick="openPhotos()"><div class="lico">📷</div><div class="linfo"><div class="lname">経過写真</div><div class="lsub">ビフォーアフター比較</div></div><span style="color:var(--faint)">›</span></div>
+        <div class="lrow" onclick="openInsight()"><div class="lico">🔍</div><div class="linfo"><div class="lname">振り返り</div><div class="lsub">好調/不調の要因（コスメ・サプリ）</div></div><span style="color:var(--faint)">›</span></div>
+        <div class="lrow" onclick="openDict()"><div class="lico">📖</div><div class="linfo"><div class="lname">成分辞典</div><div class="lsub">成分の効能・併用注意を調べる</div></div><span style="color:var(--faint)">›</span></div>
+      </div>
+
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:14px">スコアの推移（直近7回）</div>
+        <div class="trend" id="skin-trend"></div>
+      </div>
+
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:14px">スキンログ</div>
+        <div class="hist" id="skin-hist"></div>
+      </div>
+    </section>
+
+    <!-- ===== INVENTORY ===== -->
+    <section class="section" id="sec-inv">
+      <div class="label">コスメ棚卸し</div>
+      <div class="card" onclick="openInteractions()" style="cursor:pointer">
+        <div class="row"><div class="ctitle">🧪 相性・ダブりチェック</div><span class="link" id="inter-badge">→</span></div>
+        <div class="lsub" style="margin-top:6px">棚の中で併用注意の組み合わせや、成分がダブってる製品を点検</div>
+      </div>
+      <div class="inv4" id="inv-sum"></div>
+      <div class="chips" id="inv-chips">
+        <div class="chip on" data-f="all" onclick="setInv(this,'all')">すべて</div>
+        <div class="chip" data-f="alert" onclick="setInv(this,'alert')">⚠ 期限間近</div>
+        <div class="chip" data-f="low" onclick="setInv(this,'low')">在庫少</div>
+        <div class="chip" data-f="化粧水" onclick="setInv(this,'化粧水')">💧 化粧水</div>
+        <div class="chip" data-f="美容液" onclick="setInv(this,'美容液')">✨ 美容液</div>
+        <div class="chip" data-f="乳液" onclick="setInv(this,'乳液')">🥛 乳液</div>
+        <div class="chip" data-f="クリーム" onclick="setInv(this,'クリーム')">🫙 クリーム</div>
+        <div class="chip" data-f="日焼け止め" onclick="setInv(this,'日焼け止め')">☀️ 日焼け止め</div>
+        <div class="chip" data-f="クレンジング" onclick="setInv(this,'クレンジング')">🧴 クレンジング</div>
+        <div class="chip" data-f="洗顔" onclick="setInv(this,'洗顔')">🧼 洗顔</div>
+        <div class="chip" data-f="makeup" onclick="setInv(this,'makeup')">💄 メイク</div>
+        <div class="chip" data-f="hair" onclick="setInv(this,'hair')">💆 ヘア</div>
+      </div>
+      <div id="inv-list" style="display:flex;flex-direction:column;gap:11px"></div>
+      <button class="btn ghost sm" onclick="openAddProduct()">＋ コスメを追加</button>
+      <div class="demo-chip">◈ ローカル保存（このデモ内のみ）</div>
+    </section>
+
+    <!-- ===== DIET ===== -->
+    <section class="section" id="sec-diet">
+      <div class="label">ダイエット・コーチ</div>
+
+      <!-- weight goal -->
+      <div class="card">
+        <div class="row"><div class="ctitle">目標までの体重</div><span class="link" id="weight-rem">—</span></div>
+        <div class="weight-bar"><i id="weight-fill"></i><div class="weight-pin" id="weight-pin"></div></div>
+        <div class="weight-ends"><span id="w-start">—kg</span><span id="w-goal">—kg</span></div>
+        <div class="label" style="margin:16px 2px 6px">体重の推移</div>
+        <div id="weight-chart"></div>
+        <div class="xlabels" id="weight-xlabels"></div>
+        <button class="btn ghost sm" style="margin-top:12px" onclick="openHealthSync()">🔗 ヘルスケア連携（自動・体重/歩数/睡眠）</button>
+      </div>
+
+      <!-- からだの経過写真 -->
+      <div class="card" onclick="openPhotos('body')" style="cursor:pointer">
+        <div class="row"><div class="ctitle">📷 からだの経過写真</div><span class="link">開く →</span></div>
+        <div class="lsub" style="margin-top:6px">同じ条件で撮って、体型の変化をビフォーアフターで比較</div>
+      </div>
+
+      <!-- calorie balance -->
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:14px">今日のカロリー収支</div>
+        <div class="cal-hero">
+          <svg width="92" height="92" viewBox="0 0 98 98">
+            <circle class="ring-track" cx="49" cy="49" r="40"/>
+            <circle id="cal-ring" class="ring-prog" cx="49" cy="49" r="40" stroke="url(#g)" stroke-dasharray="251" stroke-dashoffset="251" transform="rotate(-90 49 49)"/>
+            <text id="cal-num" class="ring-num" x="49" y="44" style="font-size:22px">—</text>
+            <text class="ring-cap" x="49" y="60" id="cal-cap">/ —</text>
+          </svg>
+          <div class="cal-side">
+            <div class="cal-line"><span>摂取</span><b id="cal-in">—</b></div>
+            <div class="cal-line"><span>消費（運動）</span><b id="cal-burn">—</b></div>
+            <div class="cal-line"><span>残り</span><b class="cal-rem" id="cal-rem">—</b></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="pfc" id="diet-pfc"></div>
+      </div>
+
+      <!-- AI meal suggestions -->
+      <div class="card">
+        <div class="row" style="margin-bottom:6px">
+          <div class="ctitle">🥗 AI 食事提案</div>
+          <button class="link" onclick="refreshMeals()">↻ 別の提案</button>
+        </div>
+        <p id="meal-lead" class="lsub" style="margin-bottom:10px;line-height:1.6"></p>
+        <div id="meal-sugg"></div>
+      </div>
+
+      <!-- WORKOUT: 今日の1本（保存動画から） -->
+      <div class="label">今日の運動</div>
+      <div class="card" id="wk-hero"></div>
+
+      <div class="card">
+        <div class="row" style="margin-bottom:12px">
+          <div class="ctitle">保存した運動</div>
+          <div style="display:flex;gap:14px"><button class="link" onclick="openWeekPlan()">🗓 週間プラン</button><button class="link" onclick="openAddVideo()">＋ 追加</button></div>
+        </div>
+        <div id="wk-list"></div>
+        <div style="text-align:center;margin-top:12px"><button class="link" onclick="openWorkSugg()">ネタ切れ？ AIの運動提案を見る →</button></div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn ghost sm" style="flex:1" onclick="openLogMeal()">🍽 食事を記録</button>
+        <button class="btn ghost sm" style="flex:1" onclick="openLogWork()">🏃 運動を記録</button>
+      </div>
+
+      <div class="label">からだの土台</div>
+      <div class="mini3" id="diet-mini"></div>
+      <div class="card">
+        <div class="row"><div class="ctitle">水分</div><div style="font-size:12.5px;color:var(--faint)"><b id="water-now" style="color:var(--accent-d)">0</b> / <span id="water-goal">2000</span>ml</div></div>
+        <div class="bar" style="height:8px;margin:12px 0"><i id="water-bar" style="background:linear-gradient(90deg,var(--rose),var(--accent))"></i></div>
+        <button class="btn ghost sm" onclick="addWater(200)">💧 +200ml</button>
+      </div>
+      <div class="demo-chip">◈ Notion連携は後で接続</div>
+    </section>
+
+  </div>
+
+  <nav class="nav">
+    <button class="nav-item active" data-tab="home" onclick="go('home',this)"><div class="nav-ico">🏠</div><div class="nav-lab">ホーム</div></button>
+    <button class="nav-item" data-tab="skin" onclick="go('skin',this)"><div class="nav-ico">🪞</div><div class="nav-lab">スキン</div></button>
+    <div class="fab-wrap"><button class="fab" onclick="openRecord()">＋</button></div>
+    <button class="nav-item" data-tab="inv" onclick="go('inv',this)"><div class="nav-ico">🧴</div><div class="nav-lab">コスメ</div></button>
+    <button class="nav-item" data-tab="diet" onclick="go('diet',this)"><div class="nav-ico">🥗</div><div class="nav-lab">ダイエット</div></button>
+  </nav>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ============ DATA ============ */
+const MS=86400000;
+const today=new Date(); today.setHours(9,0,0,0);
+const dayAgo=n=>new Date(today.getTime()-n*MS);
+const fmtMD=d=>`${d.getMonth()+1}/${d.getDate()}`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ingredient dictionary (expanded) */
+const ING=[
+ {n:'ナイアシンアミド',b:'皮脂・毛穴・くすみに多角的に効く万能成分。朝晩使える。',t:['毛穴','皮脂','美白'],d:'ビタミンB3の一種。皮脂分泌を整え、メラニンの移動を抑えてトーンを明るく。バリア機能のサポートも。敏感肌でも比較的使いやすい。'},
+ {n:'レチノール',b:'ターンオーバーを促しハリ・毛穴・小じわに。夜のみ＆UV必須。',t:['エイジング','毛穴','ハリ'],d:'ビタミンA誘導体。コラーゲン産生を促進。低濃度から慣らすのが基本。',c:'妊娠・授乳中は避ける。ビタミンC/AHA・BHAとの同時併用は刺激になりやすい。'},
+ {n:'ビタミンC',b:'抗酸化・透明感・皮脂抑制。朝に使うと日中の酸化対策に。',t:['美白','透明感','抗酸化'],d:'シミ・くすみの予防に。純粋型は不安定なので誘導体も人気。',c:'高濃度はピリつくことがある。レチノールとは時間帯を分けると安心。'},
+ {n:'ヒアルロン酸',b:'高い保水力で角層をうるおいで満たす定番成分。',t:['保湿'],d:'1gで約6Lの水を抱える。低分子・高分子の組合せで角層全体をうるおす。'},
+ {n:'セラミド',b:'肌バリアを補強し、水分の蒸発を防ぐ。',t:['保湿','バリア'],d:'角層細胞間脂質の主成分。乾燥・敏感肌の土台ケアに最適。ヒト型セラミドがなじみ良い。'},
+ {n:'トラネキサム酸',b:'赤み・肝斑・くすみにアプローチ。',t:['美白','鎮静'],d:'メラニン生成の指令を抑える。肝斑ケアの代表成分。'},
+ {n:'BHA（サリチル酸）',b:'毛穴の角栓・皮脂をやさしくオフ。',t:['毛穴','角質','皮脂'],d:'油溶性で毛穴の内側まで届く。ザラつき・黒ずみ毛穴に。',c:'使いすぎは乾燥のもと。日中はUVケアを徹底。'},
+ {n:'AHA（グリコール酸）',b:'古い角質を除去してなめらかに。',t:['角質','透明感'],d:'水溶性で肌表面の角質ケアに。くすみ・ゴワつきに。',c:'敏感肌は低頻度から。レチノールとの併用は刺激注意。'},
+ {n:'グリセリン',b:'水分を抱え込む、低刺激の保湿成分。',t:['保湿'],d:'ほぼ全ての化粧品に入る定番保湿剤。安価で安全性が高い。'},
+ {n:'スクワラン',b:'軽い質感で油分を補い、なじみが良い。',t:['保湿','エモリエント'],d:'肌にもともとある皮脂成分に近く、ベタつきにくい。ヘアにも。'},
+ {n:'ペプチド',b:'ハリ・弾力をサポートするエイジングケア成分。',t:['エイジング','ハリ'],d:'コラーゲン産生のシグナルを助ける。レチノールが苦手な人の選択肢にも。'},
+ {n:'アラントイン',b:'肌をすこやかに整える低刺激の鎮静成分。',t:['鎮静'],d:'荒れ・ゆらぎ肌をいたわる。多くの敏感肌向け処方に。'},
+ {n:'パンテノール',b:'保湿と鎮静を両立。ゆらぎ肌に。',t:['保湿','鎮静'],d:'プロビタミンB5。バリアサポートと赤みケア。'},
+ {n:'アゼライン酸',b:'赤み・ニキビ・毛穴に。敏感肌でも使いやすい。',t:['鎮静','毛穴','美白'],d:'抗菌・抗炎症・トーンケアを兼ねる。酒さ・ニキビケアで人気。'},
+ {n:'酸化亜鉛',b:'紫外線を反射するノンケミカルUV成分。',t:['UV','鎮静'],d:'紫外線散乱剤。低刺激で敏感肌の日焼け止めに。白浮きしやすいのが難点。'},
+ {n:'CICA（ツボクサ）',b:'荒れ・赤みを落ち着ける韓国コスメ定番。',t:['鎮静','バリア'],d:'マデカッソシドなどを含む。ゆらぎ・ニキビ後のケアに。'},
+ {n:'コラーゲン',b:'うるおいとハリ感を与える保湿成分。',t:['保湿','ハリ'],d:'化粧品では主に保湿目的。角層にうるおいの膜をつくる。'},
+ {n:'プラセンタ',b:'うるおい・キメ・透明感をサポート。',t:['透明感','保湿'],d:'アミノ酸やビタミンを含む美容成分。'},
+ {n:'アスタキサンチン',b:'強力な抗酸化でエイジングケア。',t:['抗酸化','エイジング'],d:'赤い天然色素。紫外線ダメージ対策に。'},
+ {n:'グリチルリチン酸',b:'肌荒れ・ニキビを防ぐ鎮静成分。',t:['鎮静'],d:'甘草由来。医薬部外品の抗炎症有効成分として広く使用。'},
+ {n:'尿素',b:'角質をやわらげ、保湿する。',t:['保湿','角質'],d:'かかと・ひじなどゴワつく部位のボディケアにも。',c:'顔への高濃度はヒリつくことがある。'},
+ {n:'ティーツリー',b:'皮脂・ニキビ肌をすっきり整える。',t:['皮脂','鎮静'],d:'清涼感のある精油。ポイントケアに。',c:'原液は刺激が強い。希釈して使う。'},
+ {n:'スクワラン油',b:'髪・肌になじむ軽い保湿オイル。',t:['保湿','ヘア'],d:'ヘアの毛先ケアにも便利。'},
+ {n:'ヒト幹細胞培養液',b:'ハリ・キメをサポートする注目成分。',t:['エイジング','ハリ'],d:'グロースファクターを含む培養液。エイジングケア美容液に。'},
+ {n:'ビタミンE',b:'抗酸化・血行サポートでくすみケア。',t:['抗酸化','保湿'],d:'トコフェロール。他の抗酸化成分と相性が良い。'},
+ {n:'フェルラ酸',b:'ビタミンCの抗酸化を底上げ。',t:['抗酸化','美白'],d:'C＋Eと組み合わせると安定性と効果がアップ。'},
+ {n:'マンデル酸',b:'やさしめのAHA。敏感肌の角質ケアに。',t:['角質','美白'],d:'分子が大きく刺激が穏やか。初めてのピーリングに。'},
+ {n:'PHA',b:'最もマイルドな角質ケア成分。',t:['角質','保湿'],d:'保湿しながら穏やかにターンオーバーを助ける。'},
+ {n:'ナイアシン（UV後）',b:'日焼け後のほてり・くすみケアに。',t:['鎮静','美白'],d:'アフターサンケアにも使われる。'},
+ {n:'酵母エキス',b:'キメ・ハリを整える発酵系美容成分。',t:['保湿','ハリ'],d:'発酵コスメの定番。うるおいとなめらかさ。'},
+ {n:'ハトムギ（ヨクイニン）',b:'肌荒れ・ザラつきをすっきり。',t:['角質','鎮静'],d:'さっぱり化粧水で人気。'},
+ {n:'アゼライン酸誘導体',b:'刺激を抑えた赤み・毛穴ケア。',t:['鎮静','毛穴'],d:'アゼライン酸を使いやすくした処方。'},
+ {n:'バクチオール',b:'レチノールの植物由来代替。低刺激でハリ・毛穴に。',t:['エイジング','ハリ'],d:'妊娠・授乳中でも使いやすいとされるレチノール様成分。日中も比較的安心。'},
+ {n:'アラントイン',b:'肌をすこやかに整える低刺激の鎮静。',t:['鎮静'],d:'荒れ・ゆらぎ肌に。多くの敏感肌処方に配合。'},
+ {n:'アデノシン',b:'シワ改善の医薬部外品有効成分。',t:['エイジング','ハリ'],d:'シワ改善表示が認められた数少ない成分のひとつ。'},
+ {n:'コウジ酸',b:'メラニン生成を抑えてくすみ・シミ予防。',t:['美白'],d:'麹由来。トーンアップ系美容液に。'},
+ {n:'アルブチン',b:'おだやかな美白成分。シミ予防に。',t:['美白'],d:'ハイドロキノン誘導体。低刺激でデイリー向き。'},
+ {n:'ハイドロキノン',b:'強力な美白成分。濃いシミの集中ケアに。',t:['美白'],d:'効果が高い分、刺激や白斑リスクも。低濃度・短期から。',c:'紫外線で酸化しやすい。日中はUV必須、敏感肌は注意。'},
+ {n:'グリシルグリシン',b:'毛穴の引き締め・キメに。',t:['毛穴'],d:'毛穴悩み向け美容液で人気のアミノ酸系成分。'},
+ {n:'ライスパワーNo.11',b:'肌の水分保持能を高める（医薬部外品）。',t:['保湿','バリア'],d:'米由来。根本的な乾燥ケアをうたう有効成分。'},
+ {n:'ツボクサエキス',b:'赤み・ゆらぎを落ち着ける（CICA）。',t:['鎮静','バリア'],d:'マデカッソシド等を含む。ニキビ後・敏感肌に。'},
+ {n:'ドクダミエキス',b:'肌荒れ・テカリをすっきり整える。',t:['鎮静','皮脂'],d:'韓国コスメで人気。ゆらぎ・脂性肌に。'},
+ {n:'乳酸',b:'保湿しながら角質をやさしくケアするAHA。',t:['角質','保湿'],d:'AHAの中では保湿力が高く穏やか。'},
+ {n:'マンデル酸',b:'低刺激のAHA。敏感肌の角質ケアに。',t:['角質','美白'],d:'分子が大きく刺激が穏やか。初ピーリング向き。'},
+ {n:'幹細胞エキス',b:'ハリ・キメをサポートするエイジングケア。',t:['エイジング','ハリ'],d:'植物/ヒト由来培養液。エイジング美容液に。'},
+ {n:'チャ葉エキス',b:'抗酸化でテカリ・キメを整える。',t:['抗酸化','皮脂'],d:'緑茶ポリフェノール。脂性肌のさっぱりケアに。'},
+ {n:'アゼライン酸',b:'赤み・ニキビ・毛穴に多角的（再掲）。',t:['鎮静','毛穴','美白'],d:'抗炎症・抗菌・トーンケアを兼ねる。'},
+ {n:'尿素',b:'角質をやわらげて保湿。ボディに。',t:['保湿','角質'],d:'かかと・ひじ等のゴワつきに。',c:'顔への高濃度はヒリつくことがある。'},
+ {n:'グルタチオン',b:'抗酸化で透明感をサポート。',t:['抗酸化','美白'],d:'美白・くすみケアの注目成分。'}
+];
+const ING_MAP={}; ING.forEach(i=>{ING_MAP[i.n]=i; ING_MAP[i.n.replace(/（.*?）/,'')]=i;});
+
+const METRICS=[
+ {k:'moisture',n:'水分',low:'乾燥ぎみ',adv:{tip:'化粧水のあとすぐ美容液でフタを。',ings:['セラミド','ヒアルロン酸']}},
+ {k:'oil',n:'皮脂バランス',low:'皮脂多め',adv:{tip:'皮脂と毛穴を同時にケア。',ings:['ナイアシンアミド','BHA（サリチル酸）']}},
+ {k:'texture',n:'キメ',low:'ざらつき',adv:{tip:'摩擦を減らし、角質をやさしくオフ。',ings:['PHA','パンテノール']}},
+ {k:'pore',n:'毛穴',low:'毛穴目立ち',adv:{tip:'夜のケアを足して、日中はUV徹底。',ings:['レチノール','ナイアシンアミド']}},
+ {k:'clarity',n:'透明感',low:'くすみ',adv:{tip:'朝の抗酸化と内側からのくすみケアを。',ings:['ビタミンC','トラネキサム酸']}},
+ {k:'firmness',n:'ハリ',low:'ゆるみ',adv:{tip:'エイジングケアを習慣に。',ings:['ペプチド','レチノール']}}
+];
+
+const state={
+  skinLogs:[],
+  products:[
+   {id:'p1',name:'モイスチャー化粧水',brand:'CeraVe',cat:'skincare',type:'化粧水',emo:'💧',ings:['セラミド','ヒアルロン酸'],opened:dayAgo(160),pao:6,remaining:35},
+   {id:'p2',name:'ビタミンC美容液',brand:'Melano CC',cat:'skincare',type:'美容液',emo:'🍋',ings:['ビタミンC'],opened:dayAgo(95),pao:3,remaining:60},
+   {id:'p3',name:'レチノール ナイトセラム',brand:'The Ordinary',cat:'skincare',type:'美容液',emo:'🌙',ings:['レチノール'],opened:dayAgo(40),pao:6,remaining:80},
+   {id:'p4',name:'トーンアップ日焼け止め',brand:'Anessa',cat:'suncare',type:'日焼け止め',emo:'☀️',ings:['酸化亜鉛'],opened:dayAgo(70),pao:12,remaining:15},
+   {id:'p5',name:'バリア乳液',brand:'Curel',cat:'skincare',type:'乳液',emo:'🥛',ings:['セラミド','グリセリン'],opened:dayAgo(20),pao:12,remaining:90},
+   {id:'p6',name:'ツヤ肌クッションファンデ',brand:'Clio',cat:'makeup',type:'ファンデ',emo:'💄',ings:[],opened:dayAgo(110),pao:6,remaining:45},
+   {id:'p7',name:'ヘアオイル',brand:'N.',cat:'hair',type:'ヘアオイル',emo:'💆',ings:['スクワラン'],opened:dayAgo(15),pao:12,remaining:70},
+   {id:'p8',name:'ナイアシンアミド美容液',brand:'COSRX',cat:'skincare',type:'美容液',emo:'✨',ings:['ナイアシンアミド'],opened:null,pao:6,remaining:100}
+  ],
+  diet:{wStart:58.0,wNow:56.4,wGoal:53.0,target:1600,intake:1120,burnGoal:350,burn:287,pfc:{p:62,f:38,c:120}},
+  health:{sleep:7.2,deep:1.8,water:900,waterGoal:2000,steps:4821},
+  workoutQueue:[
+    {id:'v1',title:'朝の脂肪燃焼 10分（立ったまま）',url:'https://www.youtube.com/results?search_query=脂肪燃焼+10分',platform:'yt',mins:10,tag:'有酸素',days:['WE','SA'],done:false},
+    {id:'v2',title:'くびれ作り 5分 腹筋',url:'https://www.youtube.com/results?search_query=腹筋+5分',platform:'yt',mins:5,tag:'筋トレ',days:['MO','TH','FR'],done:false},
+    {id:'v3',title:'寝る前ストレッチ',url:'https://www.instagram.com/explore/tags/ストレッチ/',platform:'ig',mins:8,tag:'回復',days:['TU','SU'],done:false}
+  ],
+  streak:3, doneToday:0,
+  diary:[],
+  cycle:{starts:[dayAgo(24),dayAgo(52),dayAgo(80)],len:28,dur:5},
+  supplements:[{id:'su1',name:'ビタミンC',emo:'🍊'},{id:'su2',name:'亜鉛',emo:'⚙️'},{id:'su3',name:'ビオチン',emo:'💊'},{id:'su4',name:'鉄',emo:'🩸'},{id:'su5',name:'NMN',emo:'✨'},{id:'su6',name:'乳酸菌',emo:'🦠'}],
+  photos:[]
+};
+/* skin diary seed (newest first) */
+(function(){const D=(n,am,pm,cond,memo,supp)=>({id:'d'+n,date:dayAgo(n),md:fmtMD(dayAgo(n)),am,pm,cond,memo:memo||'',supp:supp||[]});
+ state.diary=[D(0,['p1','p2'],['p1','p3'],['調子いい'],'',['su1','su6']),D(1,['p1','p2'],['p1','p3','p5'],['調子いい'],'',['su1','su6']),D(2,['p1','p2','p4'],['p1','p3'],['皮脂・テカリ'],'',['su1']),
+  D(3,['p1','p2'],['p1','p3','p5'],['ニキビ','赤み'],'生理前・寝不足。新しい夜の美容液を使い始めた',['su1']),D(4,['p1'],['p1','p5'],['乾燥'],'',['su1','su4']),
+  D(5,['p1','p2','p4'],['p1','p3'],['調子いい'],'',['su1','su6']),D(6,['p1','p2'],['p1','p3'],['毛穴'],'',['su1'])];})();
+(function(){state.photos=[
+  {id:'ph1',date:dayAgo(60),md:fmtMD(dayAgo(60)),area:'face',src:svgPhoto('顔 60日前',330)},
+  {id:'ph2',date:dayAgo(30),md:fmtMD(dayAgo(30)),area:'face',src:svgPhoto('顔 30日前',280)},
+  {id:'ph3',date:dayAgo(2),md:fmtMD(dayAgo(2)),area:'face',src:svgPhoto('顔 2日前',250)},
+  {id:'pb1',date:dayAgo(56),md:fmtMD(dayAgo(56)),area:'body',src:svgPhoto('からだ 56日前',200)},
+  {id:'pb2',date:dayAgo(3),md:fmtMD(dayAgo(3)),area:'body',src:svgPhoto('からだ 3日前',160)}
+];})();
+/* weight history (ヘルスケア連携想定。古い→新しい) */
+(function(){const w=[58.0,57.8,57.9,57.5,57.3,57.4,57.0,56.8,56.9,56.6,56.5,56.4];
+  state.weightHistory=w.map((kg,i)=>({date:dayAgo((w.length-1-i)*3),kg}));})();
+state.weather={uv:8,humidity:42,temp:27};
+state.profile={done:false,skinType:'',concerns:[]};
+const COND_TAGS=[{t:'調子いい'},{t:'乾燥'},{t:'皮脂・テカリ'},{t:'毛穴'},{t:'くすみ'},{t:'赤み',bad:1},{t:'ニキビ',bad:1},{t:'かゆみ',bad:1},{t:'ゆらぎ',bad:1}];
+const BAD_TAGS=COND_TAGS.filter(c=>c.bad).map(c=>c.t);
+const condBad=t=>BAD_TAGS.includes(t);
+let invFilter='all', pending=null, mealSet=[], workSet=[];
+
+/* seed skin logs */
+[5,4,3,2,1].forEach(d=> state.skinLogs.push(makeLog(dayAgo(d), 70+(5-d)*2, d%2?'朝':'夜', d*13+7)) );
+
+function makeLog(date,around,period,seed){
+  const sc={};
+  METRICS.forEach((m,i)=> sc[m.k]=clamp(Math.round(around+(hash(seed+i*7)%21)-10),38,96));
+  const overall=Math.round(METRICS.reduce((a,m)=>a+sc[m.k],0)/METRICS.length);
+  const areas={tzone:Math.round((sc.oil+sc.pore)/2),cheek:Math.round((sc.moisture+sc.texture)/2),eye:Math.round((sc.firmness+sc.clarity)/2)};
+  const age=clamp(Math.round(28-(overall-70)*0.28),20,44);
+  return {id:'s'+Math.random().toString(36).slice(2,8),date,md:fmtMD(date),period,overall,scores:sc,areas,age};
+}
+function hash(n){n=Math.sin(n)*10000;return Math.floor((n-Math.floor(n))*1000);}
+const grade=s=>s>=85?'絶好調':s>=75?'好調':s>=65?'まずまず':s>=55?'ゆらぎ気味':'お疲れ肌';
+const metricColor=v=>v>=75?'var(--good)':v>=60?'var(--accent)':v>=50?'var(--warn)':'var(--bad)';
+
+/* meal & workout pools */
+const MEALS=[
+ {n:'鶏むねグリル＋ブロッコリー',k:320,p:38,f:8,c:10,t:'高タンパク',e:'🍗'},
+ {n:'サーモンとアボカドサラダ',k:380,p:28,f:24,c:9,t:'オメガ3・美肌',e:'🥑'},
+ {n:'豆腐とひじき＋雑穀ごはん小',k:340,p:20,f:9,c:45,t:'食物繊維',e:'🍚'},
+ {n:'ギリシャヨーグルト＋ベリー',k:230,p:18,f:9,c:20,t:'腸活',e:'🫐'},
+ {n:'卵2個オムレツ＋サラダ',k:290,p:22,f:19,c:6,t:'低糖質',e:'🍳'},
+ {n:'蒸し鶏とキヌアのボウル',k:410,p:34,f:11,c:40,t:'高タンパク',e:'🥣'},
+ {n:'白身魚ソテー＋温野菜',k:300,p:32,f:10,c:14,t:'低脂質',e:'🐟'},
+ {n:'納豆＋玄米＋味噌汁',k:360,p:19,f:10,c:52,t:'発酵・腸活',e:'🥢'},
+ {n:'ツナと豆のサラダ',k:270,p:26,f:8,c:18,t:'高タンパク',e:'🥗'},
+ {n:'えびと野菜の中華スープ',k:180,p:20,f:4,c:12,t:'低カロリー',e:'🍲'},
+ {n:'プロテインスムージー',k:250,p:25,f:5,c:28,t:'補食',e:'🥤'}
+];
+const WORKS=[
+ {n:'早歩き 30分',k:150,t:'有酸素',note:'食後のリセットに',e:'🚶'},
+ {n:'HIIT 15分',k:180,t:'脂肪燃焼',note:'短時間で高燃焼',e:'🔥'},
+ {n:'スクワット 3セット',k:90,t:'下半身',note:'基礎代謝アップ',e:'🦵'},
+ {n:'ヨガ 30分',k:100,t:'柔軟・回復',note:'むくみ・自律神経に',e:'🧘'},
+ {n:'ジョギング 25分',k:230,t:'有酸素',note:'持久力',e:'🏃'},
+ {n:'踏み台昇降 20分',k:130,t:'有酸素',note:'室内でOK',e:'🪜'},
+ {n:'プランク 3セット',k:60,t:'体幹',note:'姿勢改善',e:'🧎'},
+ {n:'自転車 30分',k:210,t:'有酸素',note:'膝にやさしい',e:'🚴'},
+ {n:'縄跳び 10分',k:120,t:'全身',note:'短時間高効率',e:'🪢'},
+ {n:'就寝前ストレッチ 15分',k:45,t:'回復',note:'睡眠の質UP',e:'🤸'}
+];
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ============ NAV ============ */
+function go(tab,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  (el||document.querySelector(`.nav-item[data-tab="${tab}"]`)).classList.add('active');
+  document.querySelector('.content').scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============ RENDER ============ */
+const C=2*Math.PI*40;
+function ring(id,numId,score){
+  const r=document.getElementById(id); r.setAttribute('stroke-dasharray',C); r.setAttribute('stroke-dashoffset',C);
+  requestAnimationFrame(()=>setTimeout(()=>r.setAttribute('stroke-dashoffset',C*(1-score/100)),60));
+  if(numId) document.getElementById(numId).textContent=score;
+}
+const last=()=>state.skinLogs[state.skinLogs.length-1];
+const prev=()=>state.skinLogs[state.skinLogs.length-2];
+function bars(scope){requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('#'+scope+' .bar i').forEach(i=>i.style.width=i.dataset.w+'%'),80));}
+function metricRows(sc){return METRICS.map(m=>{const v=sc[m.k],c=metricColor(v);
+  return `<div><div class="m-top"><span class="m-name">${m.n}</span><span class="m-val" style="color:${c}">${v}</span></div><div class="bar"><i style="background:${c}" data-w="${v}"></i></div></div>`;}).join('');}
+
+function renderHome(){
+  const L=last(),P=prev();
+  ring('home-ring','home-num',L.overall);
+  document.getElementById('home-grade').textContent=grade(L.overall);
+  const d=P?L.overall-P.overall:0, de=document.getElementById('home-delta');
+  de.className='score-sub '+(d>0?'up':d<0?'dn':'flat');
+  de.textContent=P?`${d>0?'↑ +':d<0?'↓ ':'± '}${Math.abs(d)} 前回比 ・ 肌年齢 ${L.age}歳`:`肌年齢 ${L.age}歳`;
+  const weak=[...METRICS].sort((a,b)=>L.scores[a.k]-L.scores[b.k])[0];
+  document.getElementById('home-note').textContent=`気になるのは「${weak.n}」(${L.scores[weak.k]})。`;
+  const a=weak.adv;
+  document.getElementById('home-advice').innerHTML=`肌スコアは<strong>${L.overall}</strong>（${grade(L.overall)}）。いちばんの伸びしろは<strong>${weak.n}</strong>。${a.tip} <strong>${a.ings.join('・')}</strong>がおすすめ。`;
+  // profile chip
+  const pf=document.getElementById('home-profile');
+  if(state.profile.done&&(state.profile.skinType||state.profile.concerns.length)){
+    pf.style.display='';
+    pf.innerHTML=`<span class="demo-chip" onclick="openOnboarding()" style="cursor:pointer">${state.profile.skinType?state.profile.skinType+'肌':''}${state.profile.concerns.length?' ・ '+state.profile.concerns.slice(0,3).join('/'):''} ・ 編集</span>`;
+  } else pf.style.display='none';
+
+  renderWeather();
+  document.getElementById('home-mini').innerHTML=miniHTML();
+  renderHero();
+}
+function renderHero(){
+  if(!document.getElementById('hero-msg'))return;
+  const logs=state.skinLogs, L=logs[logs.length-1], prev=logs[logs.length-2];
+  const sDelta=prev?L.overall-prev.overall:0;
+  const best=L.overall>=Math.max(...logs.map(x=>x.overall));
+  // weight
+  const D=state.diet, lost=Math.round((D.wStart-D.wNow)*10)/10, toGoal=Math.round((D.wNow-D.wGoal)*10)/10;
+  const gpct=clamp((D.wStart-D.wNow)/(D.wStart-D.wGoal)*100,0,100);
+  // streak
+  const ds=diaryStreak(), ws=state.streak||0, streak=Math.max(ds,ws);
+  // tiles
+  document.getElementById('hk-skin').textContent=L.overall;
+  document.getElementById('hk-skin-d').innerHTML=best?'🏆 自己ベスト':(sDelta>0?`▲ +${sDelta}`:sDelta<0?`▽ ${sDelta}`:'±0');
+  document.getElementById('hk-weight').textContent=(lost>0?'-':lost<0?'+':'')+Math.abs(lost)+'kg';
+  document.getElementById('hk-weight-d').textContent=toGoal>0?`目標まで${toGoal}`:'目標達成 🎉';
+  document.getElementById('hk-streak').innerHTML=`🔥${streak}`;
+  document.getElementById('hk-streak-d').textContent=ds>=ws?'日記':'運動';
+  document.getElementById('hk-goal').textContent=`目標 ${D.wGoal}kg まで ${Math.round(gpct)}%`;
+  setTimeout(()=>{const b=document.getElementById('hk-goalbar');if(b)b.style.width=gpct+'%';},60);
+  // headline
+  let msg='今日もコツコツいこう 🌱';
+  if(best)msg='肌スコア、自己ベスト更新 ✨ いい調子！';
+  else if(sDelta>0)msg=`肌スコアが前回より +${sDelta} ✨ 続けよう`;
+  else if(lost>0)msg=`開始から -${lost}kg 🎉 順調です`;
+  else if(streak>=3)msg=`${streak}日連続、習慣になってきた 🔥`;
+  document.getElementById('hero-msg').textContent=msg;
+}
+const UV_INFO=u=>u<=2?{l:'弱い',c:'#37a37c'}:u<=5?{l:'中程度',c:'#cf9333'}:u<=7?{l:'強い',c:'#e8843c'}:u<=10?{l:'非常に強い',c:'#d75f64'}:{l:'極端',c:'#a23'};
+function renderWeather(){
+  const el=document.getElementById('home-weather');if(!el)return;
+  const w=state.weather,uv=UV_INFO(w.uv);
+  const adv=[];
+  if(w.uv>=6)adv.push('日焼け止めはこまめに塗り直しを');
+  if(w.humidity<=45)adv.push('乾燥ぎみ。保湿を厚めに');
+  if(w.humidity>=70)adv.push('皮脂が出やすい。さっぱり処方で');
+  el.innerHTML=`<div class="uv-card">
+    <div class="uv-badge" style="background:${uv.c}"><b>${w.uv}</b><span>UV</span></div>
+    <div style="flex:1"><div class="row"><div style="font-size:14px;font-weight:600">UV ${uv.l} ・ ${w.temp}℃ ・ 湿度${w.humidity}%</div><button class="link" onclick="event.stopPropagation();fetchWeather()">📍更新</button></div>
+      <div class="lsub" style="margin-top:3px">${w.real?'現在地の実データ ・ ':''}${adv.join(' / ')||'今日は穏やか。基本のケアでOK'}</div></div></div>`;
+}
+async function fetchWeather(){
+  if(!navigator.geolocation){toast('この端末では位置情報が使えません');return;}
+  toast('📍 現在地のUVを取得中…');
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:8000}));
+    const {latitude:la,longitude:lo}=pos.coords;
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,relative_humidity_2m,uv_index`);
+    const j=await r.json();
+    if(j&&j.current){state.weather={uv:Math.max(0,Math.round(j.current.uv_index)),humidity:Math.round(j.current.relative_humidity_2m),temp:Math.round(j.current.temperature_2m),real:true};renderWeather();toast('✓ 現在地のUVを取得しました（Open-Meteo・無料）');return;}
+    throw 0;
+  }catch(e){toast('取得できませんでした（位置情報/通信の制限）。デモ値のままです');}
+}
+/* 汎用ラインチャート（値配列） */
+function valueLineSVG(vals,color,fill){
+  const n=vals.length,W=100,H=46,pad=4;
+  const vmin=Math.min(...vals)-0.3,vmax=Math.max(...vals)+0.3;
+  const x=i=>(i/(n-1))*W, y=v=>H-pad-((v-vmin)/(vmax-vmin||1))*(H-pad*2);
+  const pts=vals.map((v,i)=>`${x(i).toFixed(1)} ${y(v).toFixed(1)}`);
+  const path='M'+pts.join(' L');
+  const area=`M${x(0).toFixed(1)} ${H} L`+pts.join(' L')+` L${x(n-1).toFixed(1)} ${H} Z`;
+  return `<svg class="lc" style="height:90px" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${fill?`<path d="${area}" fill="${fill}" stroke="none"/>`:''}
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function miniHTML(){const h=state.health;return `
+  <div class="mini"><div class="mi">😴</div><b>${h.sleep}<small>h</small></b><span>睡眠</span></div>
+  <div class="mini"><div class="mi">💧</div><b>${h.water}<small>ml</small></b><span>水分</span></div>
+  <div class="mini"><div class="mi">🚶</div><b>${(h.steps/1000).toFixed(1)}<small>k</small></b><span>歩数</span></div>`;}
+
+function renderSkin(){
+  const L=last(),P=prev();
+  ring('skin-ring','skin-num',L.overall);
+  document.getElementById('skin-age').textContent=L.age+'歳';
+  document.getElementById('skin-grade').textContent=grade(L.overall);
+  document.getElementById('skin-when').textContent=`${L.md} ${L.period} に解析`;
+  document.getElementById('skin-areas').innerHTML=`
+    <div class="area"><b style="color:${metricColor(L.areas.tzone)}">${L.areas.tzone}</b><span>Tゾーン</span></div>
+    <div class="area"><b style="color:${metricColor(L.areas.cheek)}">${L.areas.cheek}</b><span>頬</span></div>
+    <div class="area"><b style="color:${metricColor(L.areas.eye)}">${L.areas.eye}</b><span>目元</span></div>`;
+  document.getElementById('skin-metrics').innerHTML=metricRows(L.scores); bars('skin-metrics');
+  // compare
+  if(P){const diffs=METRICS.map(m=>({n:m.n,d:L.scores[m.k]-P.scores[m.k]}));
+    const up=[...diffs].sort((a,b)=>b.d-a.d)[0], dn=[...diffs].sort((a,b)=>a.d-b.d)[0];
+    const od=L.overall-P.overall;
+    document.getElementById('skin-cmp').innerHTML=
+      `<div>前回比 総合 <b class="${od>=0?'up':'dn'}">${od>=0?'+':''}${od}</b></div>`+
+      (up.d>0?`<div>↑改善 <b>${up.n} +${up.d}</b></div>`:'')+
+      (dn.d<0?`<div>↓低下 <b>${dn.n} ${dn.d}</b></div>`:'');
+  } else document.getElementById('skin-cmp').innerHTML='<div class="flat">比較できる前回データなし</div>';
+  // trend
+  const l7=state.skinLogs.slice(-7);
+  document.getElementById('skin-trend').innerHTML=l7.map((l,i)=>`<div class="t-col"><div class="t-sc">${l.overall}</div><div class="t-bar ${i===l7.length-1?'last':''}" data-h="${l.overall}" style="height:0"></div><div class="t-lab">${l.md}</div></div>`).join('');
+  requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('#skin-trend .t-bar').forEach(b=>b.style.height=b.dataset.h+'%'),80));
+  // history
+  document.getElementById('skin-hist').innerHTML=[...state.skinLogs].reverse().slice(0,5).map(l=>
+    `<div class="hcell" onclick="openLog('${l.id}')"><b style="color:${metricColor(l.overall)}">${l.overall}</b><span>${l.md} ${l.period}</span></div>`).join('')
+    +`<div class="hcell add" onclick="openAnalyze()"><b style="font-size:26px">+</b></div>`;
+  renderDiaryCard();
+}
+
+/* ===== 肌日記 ===== */
+const prodById=id=>state.products.find(p=>p.id===id);
+const prodEmo=id=>{const p=prodById(id);return p?p.emo:'·';};
+const shortName=s=>s.length>7?s.slice(0,7)+'…':s;
+function condPills(cond){return cond.map(t=>`<span class="pill ${condBad(t)?'bad':'good'}" style="font-size:10px">${t}</span>`).join(' ');}
+function entryEmos(e){const all=[...new Set([...e.am,...e.pm])];return all.map(id=>prodEmo(id)).join(' ')||'—';}
+function renderDiaryCard(){
+  const el=document.getElementById('diary-list');if(!el)return;
+  const list=state.diary.slice(0,3);
+  el.innerHTML=list.length?list.map(e=>`
+    <div class="lrow" onclick="openDailyLog('${e.id}')">
+      <div class="lico" style="font-size:15px">${e.md}</div>
+      <div class="linfo"><div style="margin-bottom:4px">${condPills(e.cond)}</div>
+        <div class="lsub">使用: ${entryEmos(e)}${e.memo?' ・ '+shortName(e.memo):''}</div></div>
+    </div>`).join(''):`<div class="empty">まだ記録がありません</div>`;
+}
+
+/* daily log sheet */
+let logAM=[],logPM=[],logCond=[],logSupp=[],logEditId=null;
+function openDailyLog(id){
+  logEditId=null;logAM=[];logPM=[];logCond=[];logSupp=[];
+  let title='今日のケアを記録', dlabel='今日';
+  if(id){const e=state.diary.find(x=>x.id===id); if(e){logEditId=id;logAM=[...e.am];logPM=[...e.pm];logCond=[...e.cond];logSupp=[...(e.supp||[])];title=`${e.md} の記録`;dlabel=e.md;}}
+  const memo=logEditId?(state.diary.find(x=>x.id===logEditId)||{}).memo||'':'';
+  openSheet(`<div class="stitle">${title}</div>
+    <div class="ssub">使ったスキンケアと肌の調子を残すと、あとで「荒れた日に何使ってた？」を辿れます。</div>
+    <div class="label" style="margin:0 0 8px">☀️ 朝つかったもの</div>
+    <div class="chips" id="dl-am" style="flex-wrap:wrap">${prodChips('am')}</div>
+    <div class="label" style="margin:16px 0 8px">🌙 夜つかったもの</div>
+    <div class="chips" id="dl-pm" style="flex-wrap:wrap">${prodChips('pm')}</div>
+    <div class="label" style="margin:16px 0 8px">肌の調子</div>
+    <div class="chips" id="dl-cond" style="flex-wrap:wrap">${COND_TAGS.map(c=>`<div class="chip ${logCond.includes(c.t)?'on':''}" onclick="toggleCond(this,'${c.t}')">${c.t}</div>`).join('')}</div>
+    <div class="label" style="margin:16px 0 8px">💊 飲んだサプリ</div>
+    <div class="chips" id="dl-supp" style="flex-wrap:wrap">${state.supplements.map(s=>`<div class="chip ${logSupp.includes(s.id)?'on':''}" onclick="toggleSupp(this,'${s.id}')">${s.emo} ${s.name}</div>`).join('')}</div>
+    <div class="field" style="margin:16px 0 14px"><label>ひとことメモ（生理・睡眠・新しく使ったもの等）</label><input id="dl-memo" value="${memo}" placeholder="例：生理前 / 寝不足 / 新しい美容液"></div>
+    <button class="btn" onclick="saveDailyLog()">✓ 保存する</button>
+    ${logEditId?`<button class="btn ghost sm" style="margin-top:8px;color:var(--bad)" onclick="delDiary('${logEditId}')">この記録を削除</button>`:''}
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">キャンセル</button>`);
+}
+function prodChips(slot){const set=slot==='am'?logAM:logPM;
+  return state.products.map(p=>`<div class="chip ${set.includes(p.id)?'on':''}" onclick="toggleProd('${slot}','${p.id}',this)">${p.emo} ${shortName(p.name)}</div>`).join('');}
+function toggleProd(slot,id,el){const set=slot==='am'?logAM:logPM;const i=set.indexOf(id);if(i>-1)set.splice(i,1);else set.push(id);el.classList.toggle('on');}
+function toggleCond(el,t){const i=logCond.indexOf(t);if(i>-1)logCond.splice(i,1);else logCond.push(t);el.classList.toggle('on');}
+function toggleSupp(el,id){const i=logSupp.indexOf(id);if(i>-1)logSupp.splice(i,1);else logSupp.push(id);el.classList.toggle('on');}
+function saveDailyLog(){
+  const memo=(document.getElementById('dl-memo').value||'').trim();
+  if(logEditId){const e=state.diary.find(x=>x.id===logEditId);Object.assign(e,{am:[...logAM],pm:[...logPM],cond:[...logCond],supp:[...logSupp],memo});toast('✓ 更新しました');}
+  else{
+    const ex=state.diary.find(e=>e.md===fmtMD(today));
+    if(ex){Object.assign(ex,{am:[...logAM],pm:[...logPM],cond:[...logCond],supp:[...logSupp],memo});}
+    else state.diary.unshift({id:'d'+Math.random().toString(36).slice(2,8),date:new Date(today),md:fmtMD(today),am:[...logAM],pm:[...logPM],cond:[...logCond],supp:[...logSupp],memo});
+    [...new Set([...logAM,...logPM])].forEach(id=>{const p=prodById(id);if(p)p.remaining=clamp(p.remaining-2,0,100);});
+    toast('✓ 記録しました');
+  }
+  closeSheet();renderDiaryCard();renderInv();renderHome();
+}
+function delDiary(id){state.diary=state.diary.filter(e=>e.id!==id);closeSheet();renderDiaryCard();toast('削除しました');}
+
+/* full diary timeline */
+let diaryFilter='all';
+function openDiary(){
+  openSheet(`<div class="stitle">肌日記</div><div class="ssub">日付ごとの記録。荒れた日だけ絞り込めます。</div>
+    <div class="chips" style="margin-bottom:6px">
+      <div class="chip ${diaryFilter==='all'?'on':''}" onclick="setDiaryFilter(this,'all')">すべて</div>
+      <div class="chip ${diaryFilter==='bad'?'on':''}" onclick="setDiaryFilter(this,'bad')">⚠ 荒れた日</div>
+    </div>
+    <div id="diary-full"></div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="openDailyLog()">📝 今日を記録</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+  renderDiaryFull();
+}
+function setDiaryFilter(el,f){diaryFilter=f;document.querySelectorAll('#sheet .chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderDiaryFull();}
+function renderDiaryFull(){
+  let list=state.diary;
+  if(diaryFilter==='bad')list=list.filter(e=>e.cond.some(condBad));
+  document.getElementById('diary-full').innerHTML=list.length?list.map(e=>{
+    const names=[...new Set([...e.am,...e.pm])].map(id=>{const p=prodById(id);return p?`${p.emo}${shortName(p.name)}`:'';}).filter(Boolean).join(' / ');
+    return `<div style="padding:13px 0;border-bottom:1px solid var(--line)" onclick="openDailyLog('${e.id}')">
+      <div class="row"><b>${e.md}</b><div>${condPills(e.cond)}</div></div>
+      <div class="lsub" style="margin-top:7px">使用: ${names||'—'}</div>
+      ${e.memo?`<div class="lsub" style="margin-top:3px;color:var(--ink2)">📝 ${e.memo}</div>`:''}</div>`;
+  }).join(''):`<div class="empty">該当する記録がありません</div>`;
+}
+
+/* 振り返り：荒れた日によく使っていたもの */
+function itemUses(item,entries){return entries.filter(e=>item.kind==='supp'?(e.supp||[]).includes(item.id):(e.am.includes(item.id)||e.pm.includes(item.id))).length;}
+function allItems(){return [...state.products.map(p=>({id:p.id,name:p.name,emo:p.emo,kind:'cos'})),...state.supplements.map(s=>({id:s.id,name:s.name,emo:s.emo,kind:'supp'}))];}
+function openInsight(){
+  const good=state.diary.filter(e=>e.cond.includes('調子いい')&&!e.cond.some(condBad));
+  const bad=state.diary.filter(e=>e.cond.some(condBad));
+  const items=allItems();
+  const rank=(entries)=>items.map(it=>({it,n:itemUses(it,entries),tot:itemUses(it,state.diary)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,4);
+  const list=(arr,base,col)=>arr.length?arr.map(x=>`
+    <div class="lrow"><div class="lico">${x.it.emo}</div>
+      <div class="linfo"><div class="lname">${x.it.name} <span style="font-size:10px;color:var(--faint)">${x.it.kind==='supp'?'サプリ':'コスメ'}</span></div>
+        <div class="lsub">${base}日 ${arr.length&&base?'':''}のうち <b style="color:${col}">${x.n}回</b> 使用 ・ 全${x.tot}回</div></div>
+      <div class="pill ${col===''?'good':''}" style="background:${col==='var(--good)'?'rgba(55,163,124,.12)':'rgba(215,95,100,.13)'};color:${col}">${Math.round(x.n/Math.max(1,x.tot)*100)}%</div>
+    </div>`).join(''):`<div class="empty">データがまだ足りません</div>`;
+  openSheet(`<div class="stitle">振り返り</div>
+    <div class="ssub">日記から、肌の調子と「使っていたコスメ・サプリ」の重なりを集計。原因の手がかりに。</div>
+    <div class="label" style="margin:4px 0 8px;color:var(--good)">✨ 調子がいい日によく使ってた（${good.length}日）</div>
+    ${list(rank(good),good.length,'var(--good)')}
+    <div class="divider"></div>
+    <div class="label" style="margin:4px 0 8px;color:var(--bad)">⚠ 荒れた日によく使ってた（${bad.length}日）</div>
+    ${list(rank(bad),bad.length,'var(--bad)')}
+    <div class="dcaution" style="display:block;margin-top:16px">⚠ あくまで“相関”。原因の特定は、1つずつ止めて様子を見る（パッチテスト）のが確実です。</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="openDiary()">日記を見る</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+
+/* ===== 周期 × 肌 ===== */
+const PHASES=['生理期','卵胞期','排卵期','黄体期'];
+const PHASE_COL={'生理期':'#d98cb0','卵胞期':'#37a37c','排卵期':'#6f63c9','黄体期':'#cf9333'};
+function lastStartBefore(date){const s=state.cycle.starts.filter(x=>x<=date).sort((a,b)=>b-a);return s[0]||state.cycle.starts[state.cycle.starts.length-1];}
+function cycleDayOf(date){const s=lastStartBefore(date);let d=Math.floor((date-s)/MS);const L=state.cycle.len;d=((d%L)+L)%L;return d+1;}
+function phaseOf(cd){const D=state.cycle.dur,L=state.cycle.len;if(cd<=D)return '生理期';if(cd<=13)return '卵胞期';if(cd<=15)return '排卵期';return '黄体期';}
+function daysToNext(){const s=lastStartBefore(today);const next=new Date(s.getTime()+state.cycle.len*MS);return Math.max(0,Math.ceil((next-today)/MS));}
+function dailySeries(days){
+  const arr=[];
+  for(let i=days-1;i>=0;i--){const date=dayAgo(i);const cd=cycleDayOf(date);const ph=phaseOf(cd);
+    let base=ph==='卵胞期'?82:ph==='排卵期'?80:ph==='生理期'?64:(cd>state.cycle.len-4?60:71);
+    base+=(hash(i*7+date.getDate())%9)-4;
+    const e=state.diary.find(x=>x.md===fmtMD(date));
+    if(e){if(e.cond.some(condBad))base=Math.min(base,50+(hash(i)%6));else if(e.cond.includes('調子いい'))base=Math.max(base,80);}
+    arr.push({date,md:fmtMD(date),score:clamp(Math.round(base),40,95),cd,phase:ph,isPeriod:cd<=state.cycle.dur});
+  }
+  return arr;
+}
+function lineChartSVG(series){
+  const n=series.length,W=100,H=56,pad=3;
+  const vmin=40,vmax=95;
+  const x=i=>(i/(n-1))*W, y=v=>H-pad-((v-vmin)/(vmax-vmin))*(H-pad*2);
+  const bands=series.map((s,i)=>s.isPeriod?`<rect x="${(x(i)-W/(n-1)/2).toFixed(1)}" y="0" width="${(W/(n-1)).toFixed(1)}" height="${H}" fill="rgba(217,140,176,.22)"/>`:'').join('');
+  const path='M'+series.map((s,i)=>`${x(i).toFixed(1)} ${y(s.score).toFixed(1)}`).join(' L');
+  return `<svg class="lc" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bands}
+    <path d="${path}" fill="none" stroke="#6f63c9" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function openCycle(){
+  const cd=cycleDayOf(today),ph=phaseOf(cd),dn=daysToNext();
+  const series=dailySeries(35);
+  // phase averages
+  const pavg=PHASES.map(p=>{const ss=series.filter(s=>s.phase===p);const a=ss.length?Math.round(ss.reduce((t,s)=>t+s.score,0)/ss.length):0;return {p,a};});
+  const maxA=Math.max(...pavg.map(x=>x.a),1), lowest=[...pavg].filter(x=>x.a).sort((a,b)=>a.a-b.a)[0];
+  const phaseBars=pavg.map(x=>`<div class="pb"><div class="pbv" style="color:${PHASE_COL[x.p]}">${x.a||'—'}</div><i style="height:${x.a/95*100}%;background:${PHASE_COL[x.p]}"></i><div class="pbl">${x.p}</div></div>`).join('');
+  const labels=[series[0].md,series[Math.floor(series.length/2)].md,series[series.length-1].md];
+  openSheet(`<div class="stitle">周期 × 肌</div>
+    <div class="ssub">生理周期と肌の調子の関係を見える化。ピンクの帯が生理期間です。</div>
+    <div class="card flat" style="padding:0 0 4px;box-shadow:none;border:none">
+      <div class="cyc-status" style="margin-bottom:6px">
+        <div><div class="cyc-day">${cd}<span style="font-size:13px;color:var(--faint)">日目</span></div></div>
+        <div style="flex:1"><div class="cyc-phase" style="color:${PHASE_COL[ph]}">${ph}</div>
+          <div class="cyc-next">${ph==='生理期'?'生理中':`あと約${dn}日で生理`}${ph==='黄体期'?' ・ 荒れやすい時期':''}</div></div>
+        <button class="btn mini ghost" onclick="logPeriod()">生理が来た</button>
+      </div>
+    </div>
+    <div class="label" style="margin:14px 2px 8px">肌調子の推移（35日）</div>
+    ${lineChartSVG(series)}
+    <div class="xlabels"><span>${labels[0]}</span><span>${labels[1]}</span><span>今日</span></div>
+    <div class="legend"><span><i style="background:#6f63c9"></i>肌調子スコア</span><span><i style="background:rgba(217,140,176,.6)"></i>生理期間</span></div>
+    <div class="divider"></div>
+    <div class="label" style="margin:0 2px 8px">周期フェーズ別の平均スコア</div>
+    <div class="phasebars">${phaseBars}</div>
+    ${lowest?`<div class="insight" style="margin-top:16px"><div class="tag-ai">傾向</div><p><strong>${lowest.p}</strong>に肌スコアが下がりやすい傾向（平均${lowest.a}）。${lowest.p==='黄体期'||lowest.p==='生理期'?'生理前〜生理中はゆらぎやすいので、保湿・鎮静多めのケアに切り替えると◎。':''}</p></div>`:''}
+    <button class="btn ghost sm" style="margin-top:14px" onclick="closeSheet()">閉じる</button>`);
+  requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('#sheet .pb i').forEach(b=>{const h=b.style.height;b.style.height='0';requestAnimationFrame(()=>b.style.height=h);}),20));
+}
+function logPeriod(){state.cycle.starts.unshift(new Date(today));toast('🩸 今日を生理開始に記録');openCycle();}
+
+/* ===== 経過写真（ビフォーアフター） ===== */
+function svgPhoto(label,h){
+  const s=`<svg xmlns='http://www.w3.org/2000/svg' width='300' height='400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='hsl(${h},45%,88%)'/><stop offset='1' stop-color='hsl(${(h+30)%360},50%,80%)'/></linearGradient></defs><rect width='300' height='400' fill='url(%23g)'/><circle cx='150' cy='165' r='70' fill='rgba(255,255,255,.45)'/><text x='150' y='300' font-family='sans-serif' font-size='24' fill='%23ffffff' text-anchor='middle'>${label}</text><text x='150' y='330' font-family='sans-serif' font-size='13' fill='rgba(255,255,255,.85)' text-anchor='middle'>サンプル</text></svg>`;
+  return 'data:image/svg+xml,'+encodeURIComponent(s);
+}
+let cmpA=null,cmpB=null,photoArea='face';
+function openPhotos(area){
+  photoArea=area==='body'?'body':'face';cmpA=null;cmpB=null;
+  openSheet(`<div class="stitle">経過写真</div><div class="ssub">同じ条件（明るさ・角度）で撮ると比較しやすい。写真は端末内のデモ保存です。</div>
+    <input type="file" accept="image/*" capture="user" id="photo-input" style="display:none" onchange="onPhotoPick(event)">
+    <div class="chips" style="margin-bottom:14px">
+      <div class="chip ${photoArea==='face'?'on':''}" id="pa-face" onclick="setPhotoArea('face')">🙂 顔</div>
+      <div class="chip ${photoArea==='body'?'on':''}" id="pa-body" onclick="setPhotoArea('body')">🧍 からだ</div>
+    </div>
+    <div id="photo-compare"></div>
+    <div class="label" style="margin:18px 2px 8px">タイムライン</div>
+    <div class="photo-grid" id="photo-grid"></div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="document.getElementById('photo-input').click()">📷 写真を追加</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+  renderPhotos();
+}
+function setPhotoArea(a){photoArea=a;cmpA=null;cmpB=null;
+  const f=document.getElementById('pa-face'),b=document.getElementById('pa-body');if(f)f.classList.toggle('on',a==='face');if(b)b.classList.toggle('on',a==='body');
+  renderPhotos();}
+function areaPhotos(){return state.photos.filter(p=>(p.area||'face')===photoArea);}
+function renderPhotos(){
+  const grid=document.getElementById('photo-grid');if(!grid)return;
+  const list=areaPhotos();
+  const ph=[...list].sort((a,b)=>a.date-b.date);
+  if(ph.length>=2){if(!cmpA)cmpA=ph[0].id;if(!cmpB)cmpB=ph[ph.length-1].id;}
+  grid.innerHTML=[...list].sort((a,b)=>b.date-a.date).map(p=>`<div class="photo-cell" onclick="setCmp('${p.id}')"><img src="${p.src}" alt=""><div class="pd">${p.md}</div></div>`).join('')
+    +`<div class="photo-cell add" onclick="document.getElementById('photo-input').click()">＋</div>`;
+  const cmp=document.getElementById('photo-compare');
+  const A=state.photos.find(p=>p.id===cmpA),B=state.photos.find(p=>p.id===cmpB);
+  if(A&&B&&A.id!==B.id){
+    const before=A.date<B.date?A:B, after=A.date<B.date?B:A;
+    cmp.innerHTML=`<div class="compare">
+      <div class="cmp-col"><div class="cl">Before ・ ${before.md}</div><img src="${before.src}"></div>
+      <div class="cmp-col"><div class="cl">After ・ ${after.md}</div><img src="${after.src}"></div></div>
+      <div class="ssub" style="margin:2px 0 0;text-align:center">タイムラインをタップで比較する2枚を選べます</div>`;
+  } else cmp.innerHTML=`<div class="empty">${photoArea==='face'?'顔':'からだ'}の写真が2枚以上あると、ここで比較できます</div>`;
+}
+function setCmp(id){if(cmpB===id)return;cmpA=cmpB;cmpB=id;renderPhotos();}
+function onPhotoPick(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{const p={id:'ph'+Math.random().toString(36).slice(2,8),date:new Date(today),md:fmtMD(today),area:photoArea,src:r.result};state.photos.push(p);cmpB=p.id;renderPhotos();toast('✓ 写真を追加しました');};
+  r.readAsDataURL(f);
+}
+
+/* expiry/stock */
+function expiry(p){
+  if(!p.opened) return {status:'unopened',label:'未開封',days:null,pill:'good'};
+  const used=Math.floor((today-p.opened)/MS), days=p.pao*30-used;
+  let pill='good',label;
+  if(days<=0){pill='bad';label='期限切れ';}
+  else if(days<=14){pill='bad';label=`あと${days}日`;}
+  else if(days<=30){pill='warn';label=`あと${days}日`;}
+  else{pill='good';label=`あと${Math.round(days/30*10)/10}ヶ月`;}
+  return {status:days<=30?'soon':'ok',days,label,pill};
+}
+const stock=p=>p.remaining<=20?'low':p.remaining<=40?'mid':'ok';
+
+function renderInv(){
+  const all=state.products.map(p=>({p,e:expiry(p),st:stock(p)}));
+  document.getElementById('inv-sum').innerHTML=`
+    <div class="inv-s"><b>${all.length}</b><span>総数</span></div>
+    <div class="inv-s"><b>${all.filter(x=>x.e.status!=='unopened').length}</b><span>使用中</span></div>
+    <div class="inv-s warn"><b>${all.filter(x=>x.e.pill!=='good').length}</b><span>期限間近</span></div>
+    <div class="inv-s bad"><b>${all.filter(x=>x.st==='low').length}</b><span>在庫少</span></div>`;
+  let items=all;
+  if(invFilter==='alert')items=all.filter(x=>x.e.pill!=='good');
+  else if(invFilter==='low')items=all.filter(x=>x.st==='low');
+  else if(invFilter!=='all'){const isType=PROD_TYPES.some(t=>t.t===invFilter);items=all.filter(x=> isType?(x.p.type===invFilter):(x.p.cat===invFilter));}
+  items.sort((a,b)=>(a.e.days??99999)-(b.e.days??99999));
+  document.getElementById('inv-list').innerHTML=items.length?items.map(({p,e,st})=>{
+    const sc=st==='low'?'var(--bad)':st==='mid'?'var(--warn)':'var(--good)';
+    const ings=p.ings.slice(0,3).map(i=>`<span class="ing">${i}</span>`).join('')||'<span class="pbrand">成分未登録</span>';
+    return `<div class="prod" onclick="openProduct('${p.id}')"><div class="pthumb">${p.emo}</div><div class="pbody">
+      <div class="ptop"><div><div class="pname">${p.name}</div><div class="pbrand">${p.type?p.type+' ・ ':''}${p.brand}</div></div><div class="pill ${e.pill}">${e.label}</div></div>
+      <div class="pings">${ings}</div>
+      <div class="pstock"><div class="lab">残量 ${p.remaining}%</div><div class="bar"><i style="width:${p.remaining}%;background:${sc}"></i></div></div>
+    </div></div>`;}).join('')
+    :`<div class="card flat" style="text-align:center;color:var(--faint);font-size:13px">該当するアイテムはありません</div>`;
+  renderInterBadge();
+}
+function setInv(el,f){invFilter=f;document.querySelectorAll('#inv-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderInv();}
+
+/* ===== 成分の相性・重複チェック ===== */
+const CONFLICTS=[
+ {a:['レチノール','バクチオール'],b:['ビタミンC'],level:'warn',msg:'同時使用は刺激・不安定になりやすい。朝＝ビタミンC／夜＝レチノール、と分けると◎'},
+ {a:['レチノール'],b:['AHA','BHA','サリチル酸','グリコール酸','乳酸','マンデル酸','PHA','ピーリング'],level:'bad',msg:'レチノールと角質ケアの重複で刺激が出やすい。曜日や時間帯を分けて'},
+ {a:['ビタミンC'],b:['AHA','BHA','サリチル酸','グリコール酸'],level:'warn',msg:'低pH同士で刺激が出ることも。様子を見ながら'},
+ {a:['ハイドロキノン'],b:['AHA','BHA','レチノール'],level:'warn',msg:'刺激が重なりやすい。低濃度・短期間で慎重に'},
+ {a:['ナイアシンアミド'],b:['ビタミンC'],level:'note',msg:'基本は併用OK。ごく稀に高濃度同士で一時的な赤みが出る人も'}
+];
+const ACTIVES=['レチノール','ビタミンC','ナイアシンアミド','ヒアルロン酸','セラミド','トラネキサム酸','レチノイド'];
+function hasIng(p,keys){return p.ings.some(i=>keys.some(k=>i.includes(k)));}
+function checkInteractions(){
+  const ps=state.products;
+  const pairs=[];
+  CONFLICTS.forEach(rule=>{
+    const A=ps.filter(p=>hasIng(p,rule.a)), B=ps.filter(p=>hasIng(p,rule.b));
+    A.forEach(p1=>B.forEach(p2=>{ if(p1.id!==p2.id)pairs.push({p1,p2,...rule}); }));
+  });
+  // dedup pairs by sorted id + level
+  const seen=new Set(),conflicts=[];
+  pairs.forEach(x=>{const k=[x.p1.id,x.p2.id].sort().join('-')+'|'+x.level;if(!seen.has(k)){seen.add(k);conflicts.push(x);}});
+  // duplicates by active ingredient
+  const dups=[];
+  ACTIVES.forEach(act=>{const list=ps.filter(p=>hasIng(p,[act]));if(list.length>=2)dups.push({act,list});});
+  return {conflicts,dups};
+}
+function renderInterBadge(){
+  const el=document.getElementById('inter-badge');if(!el)return;
+  const {conflicts,dups}=checkInteractions();
+  const n=conflicts.filter(c=>c.level!=='note').length+dups.length;
+  el.innerHTML=n?`<span class="pill warn">${n}件</span>`:`<span class="pill good">OK</span>`;
+}
+function openInteractions(){
+  const {conflicts,dups}=checkInteractions();
+  const lv={bad:{p:'bad',t:'要注意'},warn:{p:'warn',t:'注意'},note:{p:'good',t:'参考'}};
+  const cHtml=conflicts.length?conflicts.map(c=>`
+    <div style="padding:13px 0;border-bottom:1px solid var(--line)">
+      <div class="row" style="margin-bottom:5px"><div style="font-size:13.5px;font-weight:600">${c.p1.emo} ${c.p1.name} ＋ ${c.p2.emo} ${c.p2.name}</div><span class="pill ${lv[c.level].p}">${lv[c.level].t}</span></div>
+      <div class="lsub" style="color:var(--ink2);line-height:1.6">${c.msg}</div></div>`).join(''):`<div class="empty">併用注意の組み合わせは見つかりません ✓</div>`;
+  const dHtml=dups.length?dups.map(d=>`
+    <div class="lrow"><div class="lico">🔁</div>
+      <div class="linfo"><div class="lname">${d.act} が重複（${d.list.length}本）</div>
+        <div class="lsub">${d.list.map(p=>p.name).join(' / ')}</div></div>
+      <span class="pill warn">ダブり</span></div>`).join(''):`<div class="empty">成分のダブりはありません ✓</div>`;
+  openSheet(`<div class="stitle">相性・ダブりチェック</div>
+    <div class="ssub">あなたの棚にある製品の組み合わせを点検します。</div>
+    <div class="label" style="margin:4px 0 8px">⚠ 併用に注意したい組み合わせ</div>
+    ${cHtml}
+    <div class="divider"></div>
+    <div class="label" style="margin:4px 0 8px">🔁 成分がダブっている製品</div>
+    ${dHtml}
+    <div class="dcaution" style="display:block;margin-top:16px">⚠ 一般的な目安です。実際の配合濃度や処方で変わります。心配な時は少量でパッチテストを。</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="closeSheet()">閉じる</button>`);
+}
+
+/* ===== オンボーディング ===== */
+const SKIN_TYPES=['乾燥','普通','混合','脂性','敏感'];
+const CONCERNS=['毛穴','乾燥','ニキビ','くすみ','赤み','ハリ','皮脂','シミ'];
+let obSkin='',obConcerns=[],obCycle=true;
+function openOnboarding(){
+  obSkin=state.profile.skinType||'';obConcerns=[...(state.profile.concerns||[])];obCycle=true;
+  openSheet(`<div class="stitle">はじめまして 🌿</div>
+    <div class="ssub">かんたんに設定すると、提案やケアがあなた向けになります。あとで変更できます。</div>
+    <div class="label" style="margin:4px 0 8px">肌質</div>
+    <div class="chips" id="ob-skin" style="flex-wrap:wrap">${SKIN_TYPES.map(s=>`<div class="chip ${obSkin===s?'on':''}" onclick="obPickSkin(this,'${s}')">${s}</div>`).join('')}</div>
+    <div class="label" style="margin:16px 0 8px">肌の悩み（複数OK）</div>
+    <div class="chips" id="ob-con" style="flex-wrap:wrap">${CONCERNS.map(c=>`<div class="chip ${obConcerns.includes(c)?'on':''}" onclick="obToggleCon(this,'${c}')">${c}</div>`).join('')}</div>
+    <div class="field" style="margin:16px 0 14px"><label>目標体重（任意・kg）</label><input id="ob-weight" inputmode="decimal" placeholder="例：53"></div>
+    <div class="field" style="margin-bottom:14px"><label>最後に生理が始まった日（任意・周期×肌に使用）</label><input id="ob-period" placeholder="例：6/1（空欄でもOK）"></div>
+    <button class="btn" onclick="finishOnboarding()">✓ はじめる</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="skipOnboarding()">スキップ</button>
+    <div style="text-align:center;margin-top:14px"><button class="link" style="color:var(--bad)" onclick="if(confirm('保存データを消して初期状態に戻します。よろしいですか？'))resetData()">🗑 データを初期化</button></div>`);
+}
+function obPickSkin(el,s){obSkin=s;document.querySelectorAll('#ob-skin .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function obToggleCon(el,c){const i=obConcerns.indexOf(c);if(i>-1)obConcerns.splice(i,1);else obConcerns.push(c);el.classList.toggle('on');}
+function finishOnboarding(){
+  state.profile={done:true,skinType:obSkin,concerns:[...obConcerns]};
+  const w=parseFloat((document.getElementById('ob-weight')||{}).value); if(w&&w>0){state.diet.wGoal=w;}
+  const pd=((document.getElementById('ob-period')||{}).value||'').trim();
+  const mdm=pd.match(/(\d{1,2})\s*[\/月.]\s*(\d{1,2})/);
+  if(mdm){const d=new Date(today.getFullYear(),parseInt(mdm[1])-1,parseInt(mdm[2]));if(d<=today){state.cycle.starts.unshift(d);}}
+  closeSheet();renderHome();renderDiet();renderInv();
+  toast('✓ 設定しました。ようこそ VITA へ');
+}
+function skipOnboarding(){state.profile.done=true;closeSheet();}
+
+/* DIET render */
+function renderDiet(){
+  const D=state.diet;
+  const total=D.wStart-D.wGoal, doneW=D.wStart-D.wNow, pct=clamp(doneW/total*100,0,100);
+  document.getElementById('weight-fill').style.width=pct+'%';
+  document.getElementById('weight-pin').style.left=pct+'%';
+  document.getElementById('w-start').textContent=D.wStart.toFixed(1)+'kg';
+  document.getElementById('w-goal').textContent=D.wGoal.toFixed(1)+'kg';
+  document.getElementById('weight-rem').textContent=`現在 ${D.wNow.toFixed(1)}kg ・ あと${(D.wNow-D.wGoal).toFixed(1)}kg`;
+  // 体重グラフ
+  const wh=state.weightHistory;
+  document.getElementById('weight-chart').innerHTML=valueLineSVG(wh.map(p=>p.kg),'#6f63c9','rgba(111,99,201,.1)');
+  document.getElementById('weight-xlabels').innerHTML=`<span>${fmtMD(wh[0].date)}</span><span>${wh[wh.length-1].kg}kg</span><span>${fmtMD(wh[wh.length-1].date)}</span>`;
+  const pctCal=clamp(D.intake/D.target*100,0,100);
+  ring('cal-ring',null,Math.round(pctCal));
+  document.getElementById('cal-num').textContent=D.intake;
+  document.getElementById('cal-cap').textContent='/ '+D.target;
+  document.getElementById('cal-in').textContent=D.intake+' kcal';
+  document.getElementById('cal-burn').textContent=D.burn+' kcal';
+  document.getElementById('cal-rem').textContent=(D.target-D.intake)+' kcal';
+  document.getElementById('diet-pfc').innerHTML=`
+    <div><div class="pf">タンパク質</div><div class="pv" style="color:var(--accent-d)">${D.pfc.p}g</div></div>
+    <div><div class="pf">脂質</div><div class="pv">${D.pfc.f}g</div></div>
+    <div><div class="pf">炭水化物</div><div class="pv">${D.pfc.c}g</div></div>`;
+  renderMeals(); renderWkHero(); renderQueue();
+  document.getElementById('diet-mini').innerHTML=miniHTML();
+  document.getElementById('water-now').textContent=state.health.water;
+  document.getElementById('water-goal').textContent=state.health.waterGoal;
+  document.getElementById('water-bar').style.width=Math.min(100,state.health.water/state.health.waterGoal*100)+'%';
+}
+function refreshMeals(){mealSet=shuffle(MEALS).slice(0,3);renderMeals();}
+function renderMeals(){
+  if(!mealSet.length)mealSet=shuffle(MEALS).slice(0,3);
+  const rem=state.diet.target-state.diet.intake;
+  document.getElementById('meal-lead').innerHTML=`残り<strong>${rem}kcal</strong>。高タンパクでお肌にもいい組み合わせを選びました。`;
+  document.getElementById('meal-sugg').innerHTML=mealSet.map(m=>`
+    <div class="sugg"><div class="sugg-ico">${m.e}</div><div class="sugg-b">
+      <div class="sugg-n">${m.n}</div><div class="sugg-m">P${m.p} ・ F${m.f} ・ C${m.c}</div><span class="sugg-tag">${m.t}</span>
+    </div><div class="sugg-k">${m.k}<small>kcal</small></div></div>`).join('');
+}
+
+/* ===== WORKOUT QUEUE (曜日固定スケジュール, ADHD-friendly) ===== */
+const WD_ORDER=['MO','TU','WE','TH','FR','SA','SU'];
+const WD_CODE=['SU','MO','TU','WE','TH','FR','SA'];   // index = getDay()
+const WD_JP={SU:'日',MO:'月',TU:'火',WE:'水',TH:'木',FR:'金',SA:'土'};
+const todayWD=()=>WD_CODE[today.getDay()];
+function platformOf(url){const u=(url||'').toLowerCase();return u.includes('youtu')?'yt':u.includes('instagram')?'ig':'other';}
+const PF_ICON={yt:'▶',ig:'📷',other:'🔗'};
+const PF_NAME={yt:'YouTube',ig:'Instagram',other:'リンク'};
+
+function renderWkHero(){
+  const el=document.getElementById('wk-hero');
+  const tc=todayWD();
+  const todays=state.workoutQueue.filter(v=>(v.days||[]).includes(tc));
+  const flame=`<span class="wk-streak">🔥 <b>${state.streak}日</b></span>`;
+  const head=`<div class="row" style="margin-bottom:14px"><div class="ctitle">${WD_JP[tc]}曜日のメニュー</div><div style="font-size:12px;color:var(--faint)">${flame} ・ 今日 ${state.doneToday}本</div></div>`;
+  if(!todays.length){
+    el.innerHTML=head+`<div class="empty">今日（${WD_JP[tc]}）は割り当てなし。休養日でもOK。<br>やるなら週間プランで曜日に動画を割り当てておくと、考えずに出ます。</div>
+      <button class="btn ghost sm" onclick="openWeekPlan()">🗓 週間プランを編集</button>`;
+    return;
+  }
+  el.innerHTML=head+todays.map((v,i)=>`
+    ${i>0?'<div class="divider"></div>':''}
+    <div class="wk-hero">
+      <div class="wk-thumb ${v.platform}">${PF_ICON[v.platform]}</div>
+      <div class="wk-meta"><div class="wk-title">${v.title}</div><div class="wk-sub">${v.tag||PF_NAME[v.platform]}${v.mins?` ・ 約${v.mins}分`:''}${v.done?' ・ ✓完了':''}</div></div>
+    </div>
+    <div class="wk-actions">
+      <a class="wk-play" href="${v.url}" target="_blank" rel="noopener" onclick="onPlay('${v.id}')">▶ 今すぐやる</a>
+      <button class="wk-2min" onclick="openTimer('${v.id}')">⏱ まず2分</button>
+    </div>
+    <button class="wk-done" onclick="markDone('${v.id}')">${v.done?'✓ 完了済み':'✓ できた！（記録）'}</button>`).join('')
+    +`<div style="text-align:center;margin-top:12px"><button class="link" onclick="openWeekPlan()">🗓 週間プランを編集 →</button></div>`;
+}
+function renderQueue(){
+  const q=state.workoutQueue;
+  document.getElementById('wk-list').innerHTML=q.length?q.map(v=>{
+    const ds=(v.days||[]).length?v.days.slice().sort((a,b)=>WD_ORDER.indexOf(a)-WD_ORDER.indexOf(b)).map(d=>WD_JP[d]).join('・'):'未割当';
+    return `<div class="vrow ${v.done?'done':''}">
+      <div class="vt wk-thumb ${v.platform}" style="border-radius:11px">${PF_ICON[v.platform]}</div>
+      <div class="vi" onclick="openEditVideo('${v.id}')"><div class="vn">${v.title}</div><div class="vs">${ds}${v.tag?' ・ '+v.tag:''}${v.done?' ・ 完了':''}</div></div>
+      <a class="vgo" href="${v.url}" target="_blank" rel="noopener" onclick="onPlay('${v.id}')">開く</a>
+      <button class="vdel" onclick="delVideo('${v.id}')">✕</button>
+    </div>`;}).join(''):`<div class="empty">まだありません</div>`;
+}
+function onPlay(id){toast('▶ 動画を開きます。終わったら「できた！」を押してね');}
+function markDone(id){
+  const v=state.workoutQueue.find(x=>x.id===id);if(!v)return;
+  if(!v.done){v.done=true;state.streak++;state.doneToday++;state.diet.burn+=120;}
+  renderWkHero();renderQueue();renderDiet();renderHome();
+  toast(`🎉 ナイス！ ${state.streak}日連続 ・ +120kcal`);
+}
+function delVideo(id){state.workoutQueue=state.workoutQueue.filter(v=>v.id!==id);renderWkHero();renderQueue();toast('削除しました');}
+
+/* day chips */
+function dayChips(sel,handler){return WD_ORDER.map(c=>`<div class="chip ${sel.includes(c)?'on':''}" onclick="${handler}(this,'${c}')">${WD_JP[c]}</div>`).join('');}
+
+/* add / edit video */
+let avDays=[], editId=null;
+function openAddVideo(){ editId=null; avDays=[todayWD()]; videoForm(); }
+function openEditVideo(id){ const v=state.workoutQueue.find(x=>x.id===id); if(!v)return; editId=id; avDays=[...(v.days||[])]; videoForm(v); }
+function videoForm(v){
+  v=v||{};
+  openSheet(`<div class="stitle">${editId?'運動を編集':'運動動画を追加'}</div>
+    <div class="ssub">YouTube・Instagramのリンクを貼って、やる曜日を決めるだけ。その曜日になったら“今日のメニュー”に自動で出ます。</div>
+    <div class="field"><label>リンク（URL）</label><input id="av-url" value="${v.url||''}" placeholder="https://youtu.be/... または https://instagram.com/..." oninput="onVidUrl()"></div>
+    <div class="field"><label>タイトル（自分が分かる名前で）</label><input id="av-title" value="${v.title||''}" placeholder="例：金曜の下半身トレ"></div>
+    <div style="display:flex;gap:12px">
+      <div class="field" style="flex:1"><label>長さ（分・任意）</label><input id="av-mins" inputmode="numeric" value="${v.mins||''}" placeholder="10"></div>
+      <div class="field" style="flex:1"><label>タグ（任意）</label><input id="av-tag" value="${v.tag||''}" placeholder="筋トレ / ストレッチ"></div>
+    </div>
+    <div class="field"><label>やる曜日（複数OK）</label><div class="chips" id="av-days" style="flex-wrap:wrap">${dayChips(avDays,'toggleAvDay')}</div></div>
+    <div id="av-pf" class="ssub" style="margin-bottom:14px"></div>
+    <button class="btn" onclick="saveVideo()">✓ 保存する</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="openWeekPlan()">🗓 週間プラン全体を見る</button>`);
+  onVidUrl();
+}
+function toggleAvDay(el,c){const i=avDays.indexOf(c);if(i>-1)avDays.splice(i,1);else avDays.push(c);el.classList.toggle('on');}
+function onVidUrl(){const u=(document.getElementById('av-url')||{}).value||'';const el=document.getElementById('av-pf');if(el)el.innerHTML=u?`判定：<b style="color:var(--accent-d)">${PF_NAME[platformOf(u)]}</b>`:'リンクを貼ると種類を自動判定します';}
+function saveVideo(){
+  const url=document.getElementById('av-url').value.trim(); if(!url){toast('リンクを貼ってください');return;}
+  const title=document.getElementById('av-title').value.trim()||(PF_NAME[platformOf(url)]+'の運動');
+  const mins=parseInt(document.getElementById('av-mins').value)||null;
+  const tag=document.getElementById('av-tag').value.trim()||'';
+  if(editId){const v=state.workoutQueue.find(x=>x.id===editId);Object.assign(v,{url,title,mins,tag,platform:platformOf(url),days:[...avDays]});toast('✓ 更新しました');}
+  else{state.workoutQueue.unshift({id:'v'+Math.random().toString(36).slice(2,8),title,url,platform:platformOf(url),mins,tag,days:[...avDays],done:false});toast('✓ 追加しました');}
+  closeSheet();go('diet');renderWkHero();renderQueue();
+}
+
+/* week plan editor */
+function openWeekPlan(){
+  openSheet(`<div class="stitle">週間プラン</div>
+    <div class="ssub">曜日ごとに「やる動画」を割り当て。今日の曜日のものが“今日のメニュー”に出ます。タップでオン/オフ。</div>
+    <div id="wp-body">${weekPlanBody()}</div>
+    <button class="btn ghost sm" style="margin-top:18px" onclick="openAddVideo()">＋ 動画を追加</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">完了</button>`);
+}
+function weekPlanBody(){
+  return WD_ORDER.map(c=>{
+    const chips=state.workoutQueue.map(v=>{const t=v.title.length>11?v.title.slice(0,11)+'…':v.title;
+      return `<div class="chip ${(v.days||[]).includes(c)?'on':''}" onclick="toggleDay('${v.id}','${c}')">${t}</div>`;}).join('');
+    const isToday=c===todayWD();
+    return `<div class="label" style="margin:14px 2px 8px;${isToday?'color:var(--accent-d);font-weight:600':''}">${WD_JP[c]}曜日${isToday?'（今日）':''}</div>
+      <div class="chips" style="flex-wrap:wrap">${chips||'<span class="empty" style="padding:0">動画がありません</span>'}</div>`;
+  }).join('');
+}
+function toggleDay(id,c){const v=state.workoutQueue.find(x=>x.id===id);if(!v)return;v.days=v.days||[];const i=v.days.indexOf(c);if(i>-1)v.days.splice(i,1);else v.days.push(c);
+  const b=document.getElementById('wp-body');if(b)b.innerHTML=weekPlanBody();renderWkHero();renderQueue();}
+
+/* AI workout suggestions (fallback, in a sheet) */
+function openWorkSugg(){
+  const set=shuffle(WORKS).slice(0,4);
+  const need=Math.max(0,state.diet.burnGoal-state.diet.burn);
+  openSheet(`<div class="stitle">AIの運動提案</div><div class="ssub">曜日の予定がない日・ネタ切れ用。消費目標まであと約${need}kcal。</div>
+    <div>${set.map(w=>`<div class="sugg"><div class="sugg-ico">${w.e}</div><div class="sugg-b"><div class="sugg-n">${w.n}</div><div class="sugg-m">${w.note} ・ ${w.t}</div></div><div class="sugg-k">${w.k}<small>kcal</small></div></div>`).join('')}</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="openWorkSugg()">↻ 別の提案</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+
+/* 2-minute starter timer (task initiation) */
+let timerIV=null;
+function openTimer(id){
+  let sec=120;
+  openSheet(`<div class="stitle">まず2分だけ</div>
+    <div class="ssub">「2分だけ」で十分。始められたら勝ち。乗ってきたらそのまま続けてOK。</div>
+    <div class="timer-num" id="tnum">2:00</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn ghost sm" style="flex:1" id="tpause" onclick="pauseTimer()">⏸ 一時停止</button>
+      <button class="btn sm" style="flex:1" onclick="finishTimer('${id}')">✓ できた</button>
+    </div>
+    <button class="btn ghost sm" style="margin-top:10px" onclick="stopTimer()">やめる</button>`);
+  clearInterval(timerIV); let paused=false;
+  window._tpause=()=>paused=!paused;
+  timerIV=setInterval(()=>{ if(paused)return; sec--;
+    const el=document.getElementById('tnum'); if(!el){clearInterval(timerIV);return;}
+    el.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+    if(sec<=0){clearInterval(timerIV); el.textContent='0:00'; toast('2分クリア！えらい。続けてもやめてもOK');}
+  },1000);
+}
+function pauseTimer(){window._tpause&&window._tpause();const b=document.getElementById('tpause');if(b)b.textContent=b.textContent.includes('再開')?'⏸ 一時停止':'▶ 再開';}
+function stopTimer(){clearInterval(timerIV);closeSheet();}
+function finishTimer(id){clearInterval(timerIV);closeSheet();markDone(id);}
+function addWater(ml){state.health.water+=ml;renderDiet();renderHome();toast(`水分 +${ml}ml`);}
+
+/* ============ SHEETS ============ */
+function openSheet(html){document.getElementById('sheet').innerHTML='<div class="handle"></div>'+html;document.getElementById('overlay').classList.add('show');}
+function closeSheet(){document.getElementById('overlay').classList.remove('show');}
+
+function openRecord(){
+  openSheet(`<div class="stitle">記録する</div><div class="ssub">なにを記録しますか？</div>
+  <div class="opts">
+    <div class="opt" onclick="openAnalyze()"><div class="oi">🔬</div><b>肌を解析</b><span>写真→スコア診断</span></div>
+    <div class="opt" onclick="openDailyLog()"><div class="oi">📝</div><b>ケアを記録</b><span>使ったコスメ＋肌状態</span></div>
+    <div class="opt" onclick="openAddProduct()"><div class="oi">🧴</div><b>コスメ追加</b><span>成分・期限を登録</span></div>
+    <div class="opt" onclick="openLogMeal()"><div class="oi">🍽</div><b>食事を記録</b><span>カロリー加算</span></div>
+    <div class="opt" onclick="openLogWork()"><div class="oi">🏃</div><b>運動を記録</b><span>消費を加算</span></div>
+  </div>`);
+}
+
+/* ---- analyze (multi-stage) ---- */
+const STAGES=['顔を検出しています','肌のキメを解析中','水分・皮脂を推定中','毛穴をマッピング中','スコアを算出中'];
+let pendingPhoto=null;
+function openAnalyze(){
+  pending=null;pendingPhoto=null;
+  openSheet(`<div class="stitle">肌を解析</div>
+    <div class="ssub">明るい場所で、顔が正面に写るように撮影/選択してください。AIが部位別に6項目をスコアリングします。</div>
+    <input type="file" accept="image/*" capture="user" id="an-input" style="display:none" onchange="onAnalyzePick(event)">
+    <div class="lens" id="lens">🤳<div class="scan"></div><div class="scan-txt" id="scan-txt">準備中…</div><div class="lens-prog" id="lens-prog"></div></div>
+    <div id="an-result"></div>
+    <button class="btn" id="an-btn" onclick="document.getElementById('an-input').click()">📷 写真を撮る / 選ぶ</button>
+    <button class="btn ghost sm" id="an-demo" style="margin-top:8px" onclick="runAnalyze()">写真なしでデモ解析</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+function onAnalyzePick(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{pendingPhoto=r.result;const lens=document.getElementById('lens');if(lens)lens.innerHTML=`<img src="${r.result}" style="width:100%;height:100%;object-fit:cover"><div class="scan"></div><div class="scan-txt" id="scan-txt">準備中…</div><div class="lens-prog" id="lens-prog"></div>`;runAnalyze();};
+  r.readAsDataURL(f);
+}
+function runAnalyze(){
+  const lens=document.getElementById('lens'); lens.classList.add('on');
+  const stx=document.getElementById('scan-txt'); if(stx)stx.style.display='';
+  const ab=document.getElementById('an-btn'),ad=document.getElementById('an-demo'); if(ab)ab.style.display='none'; if(ad)ad.style.display='none';
+  let i=0; const txt=document.getElementById('scan-txt'), prog=document.getElementById('lens-prog');
+  if(txt)txt.textContent=STAGES[0]; if(prog)prog.style.width='12%';
+  const iv=setInterval(()=>{i++; if(i<STAGES.length){if(txt)txt.textContent=STAGES[i];if(prog)prog.style.width=(12+i*22)+'%';}},480);
+  setTimeout(()=>{
+    clearInterval(iv); lens.classList.remove('on');
+    const base=Math.round(last().overall+(Math.random()*14-7));
+    const log=makeLog(today,clamp(base,46,93),new Date().getHours()<15?'朝':'夜',Math.floor(Math.random()*9999));
+    pending=log;
+    lens.innerHTML=`<div style="text-align:center"><div class="serif" style="font-size:50px">${log.overall}</div><div style="font-size:10px;color:var(--faint);letter-spacing:.14em">SKIN SCORE / 100 ・ 信頼度 ${88+Math.floor(Math.random()*9)}%</div></div>`;
+    const weak=[...METRICS].sort((a,b)=>log.scores[a.k]-log.scores[b.k])[0];
+    const strong=[...METRICS].sort((a,b)=>log.scores[b.k]-log.scores[a.k])[0];
+    const tags=[]; METRICS.forEach(m=>{if(log.scores[m.k]<55)tags.push(m.low);else if(log.scores[m.k]>=82)tags.push(m.n+'良好');});
+    document.getElementById('an-result').innerHTML=`
+      <div class="agechip" style="margin-bottom:14px"><b>${log.age}歳</b><span>推定肌年齢</span></div>
+      <div class="label" style="margin:0 0 9px">部位別</div>
+      <div class="areas" style="margin-bottom:16px">
+        <div class="area"><b style="color:${metricColor(log.areas.tzone)}">${log.areas.tzone}</b><span>Tゾーン</span></div>
+        <div class="area"><b style="color:${metricColor(log.areas.cheek)}">${log.areas.cheek}</b><span>頬</span></div>
+        <div class="area"><b style="color:${metricColor(log.areas.eye)}">${log.areas.eye}</b><span>目元</span></div>
+      </div>
+      <div class="metrics" id="an-metrics">${metricRows(log.scores)}</div>
+      <div class="insight" style="margin-top:16px"><div class="tag-ai">AI 診断</div>
+        <p><strong>${strong.n}</strong>が好調（${log.scores[strong.k]}）。いちばんの伸びしろは<strong>${weak.n}</strong>（${log.scores[weak.k]}）。${weak.adv.tip}</p>
+        <div class="pillrow">${weak.adv.ings.map(x=>`<span class="ipill">🧴 ${x}</span>`).join('')}${tags.slice(0,2).map(t=>`<span class="ipill" style="background:#fff">${t}</span>`).join('')}</div>
+      </div>
+      ${pendingPhoto?'<div class="ssub" style="margin-top:10px">📷 この写真は記録すると「経過写真」にも保存されます</div>':''}
+      <button class="btn" style="margin-top:12px" onclick="saveAnalysis()">✓ この結果を記録する</button>
+      <button class="btn ghost sm" style="margin-top:8px" onclick="openAnalyze()">↻ もう一度</button>`;
+    bars('an-metrics');
+  },2400);
+}
+function saveAnalysis(){if(!pending)return;state.skinLogs.push(pending);
+  if(pendingPhoto){state.photos.push({id:'ph'+Math.random().toString(36).slice(2,8),date:new Date(today),md:fmtMD(today),area:'face',src:pendingPhoto});}
+  pending=null;pendingPhoto=null;closeSheet();renderHome();renderSkin();go('skin');toast('✓ 肌ログを保存しました');}
+
+function openLog(id){
+  const l=state.skinLogs.find(x=>x.id===id); if(!l)return;
+  openSheet(`<div class="stitle">${l.md} ${l.period} の肌</div>
+    <div class="ssub">総合 ${l.overall}（${grade(l.overall)}）・ 推定肌年齢 ${l.age}歳</div>
+    <div class="areas" style="margin-bottom:16px">
+      <div class="area"><b style="color:${metricColor(l.areas.tzone)}">${l.areas.tzone}</b><span>Tゾーン</span></div>
+      <div class="area"><b style="color:${metricColor(l.areas.cheek)}">${l.areas.cheek}</b><span>頬</span></div>
+      <div class="area"><b style="color:${metricColor(l.areas.eye)}">${l.areas.eye}</b><span>目元</span></div></div>
+    <div class="metrics" id="log-m">${metricRows(l.scores)}</div>
+    <button class="btn ghost sm" style="margin-top:16px" onclick="openLogEdit('${l.id}')">✏️ 手動で補正する</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+  bars('log-m');
+}
+function recomputeLog(l){
+  l.overall=Math.round(METRICS.reduce((a,m)=>a+l.scores[m.k],0)/METRICS.length);
+  l.areas={tzone:Math.round((l.scores.oil+l.scores.pore)/2),cheek:Math.round((l.scores.moisture+l.scores.texture)/2),eye:Math.round((l.scores.firmness+l.scores.clarity)/2)};
+  l.age=clamp(Math.round(28-(l.overall-70)*0.28),20,44);
+}
+function openLogEdit(id){
+  const l=state.skinLogs.find(x=>x.id===id); if(!l)return;
+  openSheet(`<div class="stitle">手動で補正</div>
+    <div class="ssub">AIの解析は光や角度で実際とズレることがあります。気になる項目を直してください（−/＋）。</div>
+    <div id="edit-m">${METRICS.map(m=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)">
+        <span class="m-name" style="font-size:13.5px">${m.n}</span>
+        <div class="stepper"><button onclick="editMetric('${id}','${m.k}',-5)">−</button>
+          <b id="em-${m.k}" class="serif" style="font-size:20px;min-width:42px;text-align:center;display:inline-block">${l.scores[m.k]}</b>
+          <button onclick="editMetric('${id}','${m.k}',5)">＋</button></div>
+      </div>`).join('')}</div>
+    <div class="row" style="margin-top:14px"><span class="ctitle">総合（自動計算）</span><b id="em-overall" class="serif" style="font-size:22px">${l.overall}</b></div>
+    <button class="btn" style="margin-top:16px" onclick="saveLogEdit('${id}')">✓ 補正を保存</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="openLog('${id}')">← 戻る</button>`);
+}
+function editMetric(id,k,d){const l=state.skinLogs.find(x=>x.id===id);l.scores[k]=clamp(l.scores[k]+d,30,99);
+  document.getElementById('em-'+k).textContent=l.scores[k];
+  document.getElementById('em-overall').textContent=Math.round(METRICS.reduce((a,m)=>a+l.scores[m.k],0)/METRICS.length);}
+function saveLogEdit(id){const l=state.skinLogs.find(x=>x.id===id);recomputeLog(l);closeSheet();renderSkin();renderHome();toast('✓ 補正しました');}
+function editLatest(){const l=last();if(l)openLogEdit(l.id);}
+
+/* ===== ヘルスケア連携（demo） ===== */
+/* iOSショートカットから ?w=&steps=&sleep= で自動取り込み（手動なし） */
+function ingestHealthFromURL(){
+  try{
+    if(typeof location==='undefined'||!location.search)return false;
+    const q=new URLSearchParams(location.search);
+    let got=false;
+    const w=parseFloat(q.get('w'));
+    if(w>0){state.diet.wNow=Math.round(w*10)/10;const md=fmtMD(today);const ex=state.weightHistory.find(p=>fmtMD(p.date)===md);if(ex)ex.kg=state.diet.wNow;else state.weightHistory.push({date:new Date(today),kg:state.diet.wNow});got=true;}
+    const st=parseInt(q.get('steps')); if(!isNaN(st)&&st>=0){state.health.steps=st;got=true;}
+    const sl=parseFloat(q.get('sleep')); if(!isNaN(sl)&&sl>=0){state.health.sleep=sl;got=true;}
+    if(got){persist();try{history.replaceState({},'',location.pathname);}catch(e){}}
+    return got;
+  }catch(e){return false;}
+}
+function openHealthSync(){
+  const h=state.health,w=state.diet.wNow;
+  openSheet(`<div class="stitle">ヘルスケア連携</div>
+    <div class="ssub">iOSの「ショートカット」で毎朝<b>自動</b>取り込みできます（手入力は保険）。</div>
+    <div class="card flat" style="padding:14px">
+      <div class="label" style="margin:0 0 8px">自動連携（推奨・完全無料）</div>
+      <div class="lsub" style="line-height:1.8">① ショートカットApp →「オートメーション」→ 毎朝の自動化を作成<br>
+        ② アクション「ヘルスケアのサンプルを取得」で体重・歩数・睡眠を取得<br>
+        ③「URLを開く」で <code>このアプリのURL?w=体重&steps=歩数&sleep=睡眠</code> を開く<br>
+        → アプリ起動時に自動で記録されます（手入力ゼロ）</div>
+    </div>
+    <div class="label" style="margin:16px 2px 8px">いま手で取り込む（保険）</div>
+    <div class="field"><label>体重 (kg)</label><input id="hk-w" inputmode="decimal" value="${w}"></div>
+    <div class="field"><label>歩数</label><input id="hk-steps" inputmode="numeric" value="${h.steps}"></div>
+    <div class="field"><label>睡眠 (時間)</label><input id="hk-sleep" inputmode="decimal" value="${h.sleep}"></div>
+    <button class="btn" onclick="applyHealthManual()">✓ 取り込む</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+function applyHealthManual(){
+  const w=parseFloat(document.getElementById('hk-w').value);
+  const st=parseInt(document.getElementById('hk-steps').value);
+  const sl=parseFloat(document.getElementById('hk-sleep').value);
+  if(w>0){state.diet.wNow=Math.round(w*10)/10;const md=fmtMD(today);const ex=state.weightHistory.find(p=>fmtMD(p.date)===md);if(ex)ex.kg=state.diet.wNow;else state.weightHistory.push({date:new Date(today),kg:state.diet.wNow});}
+  if(!isNaN(st)&&st>=0)state.health.steps=st;
+  if(!isNaN(sl)&&sl>=0)state.health.sleep=sl;
+  persist();closeSheet();renderDiet();renderHome();toast('✓ ヘルスケアを取り込みました');
+}
+
+/* ===== 記録カレンダー＋連続日数 ===== */
+function diaryStreak(){
+  let n=0;for(let i=0;i<400;i++){const md=fmtMD(dayAgo(i));if(state.diary.some(e=>e.md===md))n++;else break;}return n;
+}
+function openCalendar(){
+  const y=today.getFullYear(),m=today.getMonth();
+  const first=new Date(y,m,1),startDow=first.getDay(),dim=new Date(y,m+1,0).getDate();
+  const diaryMd=new Set(state.diary.map(e=>e.md));
+  const skinMd=new Set(state.skinLogs.map(l=>l.md));
+  const photoMd=new Set(state.photos.map(p=>p.md));
+  const wd=['日','月','火','水','木','金','土'];
+  let cells=wd.map(w=>`<div class="cal-h">${w}</div>`).join('');
+  for(let i=0;i<startDow;i++)cells+=`<div class="cal-d blank"></div>`;
+  for(let d=1;d<=dim;d++){
+    const md=`${m+1}/${d}`;const isToday=d===today.getDate();
+    const dots=[];if(diaryMd.has(md))dots.push('#6f63c9');if(skinMd.has(md))dots.push('#d98cb0');if(photoMd.has(md))dots.push('#37a37c');
+    cells+=`<div class="cal-d ${isToday?'today':''}"><span>${d}</span><div class="cal-dots">${dots.map(c=>`<i style="background:${c}"></i>`).join('')}</div></div>`;
+  }
+  openSheet(`<div class="stitle">記録カレンダー</div><div class="ssub">${y}年${m+1}月 ・ 記録した日が色でわかります。</div>
+    <div class="streak-row">
+      <div class="streak-box"><b>🔥${diaryStreak()}</b><span>日記 連続</span></div>
+      <div class="streak-box"><b>🔥${state.streak}</b><span>運動 連続</span></div>
+      <div class="streak-box"><b>${state.diary.length}</b><span>日記 合計</span></div>
+    </div>
+    <div class="cal">${cells}</div>
+    <div class="legend"><span><i style="background:#6f63c9"></i>日記</span><span><i style="background:#d98cb0"></i>肌解析</span><span><i style="background:#37a37c"></i>写真</span></div>
+    <button class="btn ghost sm" style="margin-top:16px" onclick="openDailyLog()">📝 今日を記録</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+
+/* ---- dictionary ---- */
+let dictFilter='all';
+function openDict(){
+  dictFilter='all';
+  openSheet(`<div class="stitle">成分辞典</div><div class="ssub">${ING.length}成分を収録。気になる成分をタップで効能・注意点を確認。</div>
+    <input class="dsearch" id="dsearch" placeholder="🔍 成分名・効果で検索（例：毛穴、美白）" oninput="renderDict()">
+    <div class="chips" id="dict-chips" style="margin-bottom:6px">
+      ${['all','保湿','美白','毛穴','エイジング','鎮静','角質','UV','抗酸化'].map(t=>`<div class="chip ${t==='all'?'on':''}" onclick="dictCat(this,'${t}')">${t==='all'?'すべて':t}</div>`).join('')}
+    </div>
+    <div id="dict-list"></div>`);
+  renderDict();
+}
+function dictCat(el,t){dictFilter=t;document.querySelectorAll('#dict-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderDict();}
+function renderDict(){
+  const q=(document.getElementById('dsearch').value||'').trim();
+  let list=ING.filter(i=>dictFilter==='all'||i.t.includes(dictFilter));
+  if(q)list=list.filter(i=>i.n.includes(q)||i.b.includes(q)||i.t.some(t=>t.includes(q))||(i.d||'').includes(q));
+  document.getElementById('dict-list').innerHTML=list.length?list.map((i,idx)=>`
+    <div class="ditem" onclick="this.classList.toggle('open')">
+      <div class="dhead"><div class="dname">${i.n}</div><div class="dchev">▾</div></div>
+      <div class="dbenefit">${i.b}</div>
+      <div class="dtags">${i.t.map(t=>`<span class="dtag">${t}</span>`).join('')}</div>
+      <div class="ddetail">${i.d||''}</div>
+      ${i.c?`<div class="dcaution">⚠ ${i.c}</div>`:''}
+    </div>`).join('')
+    :`<div style="text-align:center;color:var(--faint);font-size:13px;padding:24px 0">該当する成分がありません</div>`;
+}
+
+/* ---- product detail ---- */
+function openProduct(id){
+  const p=state.products.find(x=>x.id===id);if(!p)return;const e=expiry(p);
+  const ings=p.ings.length?p.ings.map(i=>`<button class="chip" onclick="showIng(this,'${i}')">${i}</button>`).join(''):'<span class="ssub">成分未登録</span>';
+  openSheet(`<div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+      <div class="pthumb" style="width:58px;height:58px;font-size:30px">${p.emo}</div>
+      <div><div class="stitle" style="margin:0">${p.name}</div><div class="ssub" style="margin:2px 0 0">${p.brand}</div></div></div>
+    <div class="kv"><span>種類</span><b>${p.type||'—'}</b></div>
+    <div class="kv"><span>カテゴリ</span><b>${catLabel(p.cat)}</b></div>
+    <div class="kv"><span>開封日</span><b>${p.opened?fmtMD(p.opened):'未開封'}</b></div>
+    <div class="kv"><span>使用期限(PAO)</span><b>${p.pao}ヶ月</b></div>
+    <div class="kv"><span>残り</span><b style="color:${e.pill==='bad'?'var(--bad)':e.pill==='warn'?'var(--warn)':'var(--good)'}">${e.label}</b></div>
+    <div class="divider"></div>
+    <div class="label" style="margin:0 0 10px">配合成分（タップで効能）</div>
+    <div class="chips" style="flex-wrap:wrap">${ings}</div><div id="ing-pop"></div>
+    <div class="divider"></div>
+    <div class="label" style="margin:0 0 10px">残量を更新</div>
+    <div class="row"><div class="stepper"><button onclick="adjStock('${p.id}',-10)">−</button><b id="sv" class="serif" style="font-size:22px">${p.remaining}%</b><button onclick="adjStock('${p.id}',10)">＋</button></div>
+      <button class="btn mini ghost" onclick="markOpen('${p.id}')">${p.opened?'開封済み':'今日 開封'}</button></div>
+    <div class="divider"></div>
+    <button class="btn ghost sm" style="color:var(--bad)" onclick="delProduct('${p.id}')">このコスメを削除</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+function showIng(el,name){document.querySelectorAll('#sheet .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');
+  const info=ING_MAP[name]||ING.find(i=>i.n.includes(name));
+  document.getElementById('ing-pop').innerHTML=`<div class="dcaution" style="display:block;color:var(--ink2);background:var(--tint);margin-top:12px"><b style="color:var(--accent-d)">${name}</b> — ${info?info.b:'効能データ未登録'}${info&&info.c?'<br>⚠ '+info.c:''}</div>`;}
+function adjStock(id,d){const p=state.products.find(x=>x.id===id);p.remaining=clamp(p.remaining+d,0,100);document.getElementById('sv').textContent=p.remaining+'%';renderInv();renderHome();}
+function markOpen(id){const p=state.products.find(x=>x.id===id);if(!p.opened){p.opened=new Date(today);renderInv();renderHome();openProduct(id);toast('開封日を今日に設定しました');}}
+function delProduct(id){state.products=state.products.filter(x=>x.id!==id);closeSheet();renderInv();renderHome();toast('削除しました');}
+
+/* ---- add product (import or manual) ---- */
+let aCat='skincare',aPao=6,aOpen=true,aEmo=null;
+/* sample catalog (本番ではOpen Beauty Facts / 楽天API等に置換) */
+const CATALOG=[
+ {jan:'4987241135011',name:'肌ラボ 極潤 ヒアルロン液',brand:'ロート製薬',cat:'skincare',ings:['ヒアルロン酸','グリセリン'],emo:'💧'},
+ {jan:'4987241148691',name:'メラノCC 薬用しみ集中対策美容液',brand:'ロート製薬',cat:'skincare',ings:['ビタミンC'],emo:'🍋'},
+ {jan:'4550182000726',name:'無印良品 化粧水 敏感肌用 高保湿',brand:'無印良品',cat:'skincare',ings:['グリセリン'],emo:'🧴'},
+ {jan:'4901301348449',name:'キュレル 潤浸保湿 乳液',brand:'花王',cat:'skincare',ings:['セラミド'],emo:'🥛'},
+ {jan:'4909978115302',name:'アネッサ パーフェクトUV スキンケアミルク',brand:'資生堂',cat:'suncare',ings:['酸化亜鉛'],emo:'☀️'},
+ {jan:'4901301406019',name:'ビオレUV アクアリッチ ウォータリーエッセンス',brand:'花王',cat:'suncare',ings:[],emo:'☀️'},
+ {jan:'8809578760019',name:'COSRX ナイアシンアミド15%',brand:'COSRX',cat:'skincare',ings:['ナイアシンアミド'],emo:'✨'},
+ {jan:'4901872447107',name:'ちふれ ボラージ クリーム',brand:'ちふれ',cat:'skincare',ings:['セラミド','グリセリン'],emo:'🫙'},
+ {jan:'4987241170111',name:'肌ラボ 白潤プレミアム 薬用浸透美白化粧水',brand:'ロート製薬',cat:'skincare',ings:['トラネキサム酸','ヒアルロン酸'],emo:'💧'},
+ {jan:'4901301231451',name:'ニベアクリーム 大缶',brand:'花王',cat:'skincare',ings:['グリセリン','スクワラン'],emo:'🫙'},
+ {jan:'4933355004157',name:'セザンヌ 皮脂テカリ防止下地',brand:'セザンヌ',cat:'makeup',ings:[],emo:'💄'},
+ {jan:'8809843680330',name:'Anua ドクダミ 77% スージングトナー',brand:'Anua',cat:'skincare',ings:['CICA（ツボクサ）'],emo:'🌿'}
+];
+
+function openAddProduct(){
+  openSheet(`<div class="stitle">コスメを追加</div><div class="ssub">どうやって取り込む？ ネット連携は本番でAPIに接続します。</div>
+  <div class="opts">
+    <div class="opt" onclick="impBarcode()"><div class="oi">📷</div><b>バーコード</b><span>スキャンで自動入力</span></div>
+    <div class="opt" onclick="impName()"><div class="oi">🔍</div><b>商品名で検索</b><span>名前から取り込み</span></div>
+    <div class="opt" onclick="impPhoto()"><div class="oi">🖼</div><b>ラベル写真</b><span>全成分をOCR</span></div>
+    <div class="opt" onclick="openAddForm()"><div class="oi">✏️</div><b>手入力</b><span>自分で入力</span></div>
+  </div>
+  <div class="demo-chip" style="margin-top:16px">◈ デモ：サンプル商品DBから取り込みます</div>`);
+}
+/* barcode */
+/* ===== 無料データ取り込み（Open Beauty Facts ＋ Tesseract OCR） ===== */
+function guessCat(tags){const t=(tags||[]).join(' ');return /sun|spf|uv/.test(t)?'suncare':/make|lip|mascara|foundation/.test(t)?'makeup':/hair|shampoo/.test(t)?'hair':'skincare';}
+async function obfProduct(jan){
+  const url=`https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(jan)}.json?fields=product_name,product_name_ja,generic_name,brands,ingredients_text,ingredients_text_ja,categories_tags`;
+  const r=await fetch(url); const j=await r.json();
+  if(j.status!==1||!j.product)return null; const p=j.product;
+  const name=p.product_name_ja||p.product_name||p.generic_name||''; if(!name)return null;
+  const ings=(p.ingredients_text_ja||p.ingredients_text||'').split(/[,、・]/).map(s=>s.trim()).filter(Boolean).slice(0,8);
+  return {name,brand:(p.brands||'').split(',')[0].trim()||'—',cat:guessCat(p.categories_tags),ings,emo:'🧴',jan};
+}
+async function obfSearch(q){
+  const url=`https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=code,product_name,product_name_ja,brands,ingredients_text,categories_tags`;
+  const r=await fetch(url); const j=await r.json();
+  return (j.products||[]).map(p=>({jan:p.code,name:p.product_name_ja||p.product_name||'',brand:(p.brands||'').split(',')[0].trim()||'—',cat:guessCat(p.categories_tags),ings:(p.ingredients_text||'').split(/[,、・]/).map(s=>s.trim()).filter(Boolean).slice(0,6),emo:'🧴'})).filter(x=>x.name);
+}
+
+/* barcode → JAN入力 → OBF照合 */
+function impBarcode(){
+  openSheet(`<div class="stitle">バーコードで取り込み</div>
+    <div class="ssub">JANコードを入れると <b>Open Beauty Facts</b>（無料）から成分まで取得します。実機ではカメラ自動読取（ZXing等）に置換。</div>
+    <div class="field"><label>JANコード</label><input id="jan-input" inputmode="numeric" placeholder="例：4901301348449（キュレル乳液）"></div>
+    <button class="btn" onclick="lookupJAN()">🔎 照合する</button>
+    <div id="jan-status" class="ssub" style="margin-top:12px"></div>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="impBarcodeDemo()">サンプルでためす</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+async function lookupJAN(){
+  const jan=(document.getElementById('jan-input').value||'').trim(); if(!jan){toast('JANを入力してください');return;}
+  const st=document.getElementById('jan-status'); st.textContent='Open Beauty Facts に照合中…';
+  try{const hit=await obfProduct(jan);
+    if(hit){openAddForm(hit,'Open Beauty Factsから取得');return;}
+    const m=CATALOG.find(c=>c.jan===jan); if(m){openAddForm(m,'サンプルDBから取得');return;}
+    st.innerHTML='該当なし。手入力で登録できます。';
+  }catch(e){st.innerHTML='通信できませんでした（プレビューの制限の可能性）。サンプルか手入力をどうぞ。';}
+}
+function impBarcodeDemo(){const hit=CATALOG[Math.floor(Math.random()*CATALOG.length)];importHit(hit,'サンプル：'+hit.jan);}
+
+/* name → OBF検索（＋ローカル候補） */
+function impName(){
+  openSheet(`<div class="stitle">商品名で検索</div>
+    <div class="ssub"><b>Open Beauty Facts</b>（無料）を検索。日本の商品名・画像を厚くするなら、本番で楽天API（自分の無料アプリID）を足せます。</div>
+    <input class="dsearch" id="ns" placeholder="🔍 商品名・ブランド（例：極潤, アネッサ）">
+    <button class="btn sm" style="margin-bottom:12px" onclick="runNameSearch()">検索する</button>
+    <div id="ns-status" class="ssub"></div>
+    <div id="ns-list"></div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="closeSheet()">閉じる</button>`);
+}
+async function runNameSearch(){
+  const q=(document.getElementById('ns').value||'').trim(); if(!q){toast('キーワードを入れてください');return;}
+  const st=document.getElementById('ns-status'),listEl=document.getElementById('ns-list'); st.textContent='検索中…';
+  let results=CATALOG.filter(c=>c.name.includes(q)||c.brand.includes(q));
+  try{const ext=await obfSearch(q); const seen=new Set(results.map(r=>r.name)); ext.forEach(e=>{if(!seen.has(e.name))results.push(e);});}catch(e){}
+  st.textContent=results.length?`${results.length}件`:'該当なし（手入力できます）';
+  listEl.innerHTML=results.map(c=>`<div class="vrow" onclick='importHit(${JSON.stringify(c).replace(/'/g,"&#39;")},"検索から取り込み")'>
+      <div class="vt other" style="border-radius:11px;font-size:18px">${c.emo||'🧴'}</div>
+      <div class="vi"><div class="vn">${c.name}</div><div class="vs">${c.brand}${c.ings&&c.ings.length?' ・ '+c.ings.slice(0,3).join('・'):''}</div></div>
+      <span class="vgo">選ぶ</span></div>`).join('');
+}
+
+/* photo → Tesseract.js OCR で成分を読み取り */
+function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
+function impPhoto(){
+  openSheet(`<div class="stitle">ラベルから成分を読み取る</div>
+    <div class="ssub">「全成分」表示が写るように撮影。<b>Tesseract.js</b>（無料・端末内OCR）で読み取り、成分辞典と照合します。初回は辞書DLで少し時間がかかります。</div>
+    <input type="file" accept="image/*" capture="environment" id="ocr-input" style="display:none" onchange="onOcrPick(event)">
+    <button class="btn" onclick="document.getElementById('ocr-input').click()">📷 ラベルを撮影 / 選択</button>
+    <div id="ocr-status" class="ssub" style="margin-top:14px"></div>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="impBarcodeDemo()">うまく行かない時：サンプルで進む</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="closeSheet()">閉じる</button>`);
+}
+function onOcrPick(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const st=document.getElementById('ocr-status'); st.textContent='OCRエンジンを準備中…';
+    try{
+      await loadTesseract();
+      const {data}=await Tesseract.recognize(reader.result,'jpn',{logger:m=>{if(st)st.textContent=`解析中… ${m.status||''} ${Math.round((m.progress||0)*100)}%`;}});
+      const text=(data&&data.text||'').replace(/\s/g,'');
+      const found=[...new Set(ING.map(i=>i.n.replace(/（.*?）/,'')).filter(n=>text.includes(n)))];
+      openAddForm({name:'',brand:'',cat:'skincare',ings:found,emo:'🧴'}, found.length?`ラベルから ${found.length}成分を検出`:'文字は読めたが既知成分は未検出。手入力で追記を');
+    }catch(e){ if(st)st.innerHTML='OCRを読み込めませんでした（プレビューの通信制限の可能性）。実機の本番では動作します。手入力かサンプルをどうぞ。'; }
+  };
+  reader.readAsDataURL(f);
+}
+function importHit(c,note){ openAddForm(c, note); toast('✓ '+note); }
+
+/* the form (optionally prefilled) */
+const PROD_TYPES=[
+ {t:'化粧水',cat:'skincare',emo:'💧'},{t:'美容液',cat:'skincare',emo:'✨'},{t:'乳液',cat:'skincare',emo:'🥛'},
+ {t:'クリーム',cat:'skincare',emo:'🫙'},{t:'クレンジング',cat:'skincare',emo:'🧴'},{t:'洗顔',cat:'skincare',emo:'🧼'},
+ {t:'パック',cat:'skincare',emo:'🎭'},{t:'アイケア',cat:'skincare',emo:'👁'},{t:'日焼け止め',cat:'suncare',emo:'☀️'},
+ {t:'ファンデ',cat:'makeup',emo:'💄'},{t:'下地',cat:'makeup',emo:'🎨'},{t:'リップ',cat:'makeup',emo:'💋'},
+ {t:'シャンプー',cat:'hair',emo:'🧴'},{t:'ヘアオイル',cat:'hair',emo:'💆'},{t:'ボディ',cat:'body',emo:'🛁'},{t:'その他',cat:'skincare',emo:'🧴'}
+];
+function typeMeta(t){return PROD_TYPES.find(x=>x.t===t)||{t:t,cat:'skincare',emo:'🧴'};}
+function inferType(name,cat){const n=name||'';
+ if(/化粧水|ローション|トナー|toner/i.test(n))return '化粧水';
+ if(/美容液|セラム|serum|エッセンス|essence/i.test(n))return '美容液';
+ if(/乳液|ミルク|emulsion/i.test(n))return '乳液';
+ if(/クレンジング|メイク落と|cleansing|クレンズ/i.test(n))return 'クレンジング';
+ if(/洗顔|フォーム|wash|foam/i.test(n))return '洗顔';
+ if(/パック|マスク|mask|pack/i.test(n))return 'パック';
+ if(/日焼け|サンスク|uv|spf|sunscreen/i.test(n))return '日焼け止め';
+ if(/ファンデ|クッション|foundation/i.test(n))return 'ファンデ';
+ if(/下地|プライマ|primer/i.test(n))return '下地';
+ if(/リップ|口紅|lip/i.test(n))return 'リップ';
+ if(/シャンプー|shampoo/i.test(n))return 'シャンプー';
+ if(/ヘアオイル|ヘア|hair|oil/i.test(n))return 'ヘアオイル';
+ if(/クリーム|cream|バーム|balm/i.test(n))return 'クリーム';
+ return cat==='suncare'?'日焼け止め':cat==='makeup'?'ファンデ':cat==='hair'?'ヘアオイル':cat==='body'?'ボディ':'その他';
+}
+let aType='化粧水';
+function openAddForm(p,note){
+  p=p||{}; aType=p.type||inferType(p.name,p.cat); const meta=typeMeta(aType); aCat=meta.cat; aEmo=p.emo||meta.emo; aPao=6; aOpen=true;
+  const typeChips=PROD_TYPES.map(x=>`<div class="chip ${x.t===aType?'on':''}" onclick="pickType(this,'${x.t}')">${x.emo} ${x.t}</div>`).join('');
+  openSheet(`<div class="stitle">${note?'内容を確認':'コスメを追加'}</div>
+    <div class="ssub">${note?note+'。間違いがあれば直して保存してください。':'種類・成分・開封日を入れると、棚で分類＆使用期限を自動計算します。'}</div>
+    <div class="field"><label>商品名</label><input id="np-name" value="${p.name||''}" placeholder="例：ナイアシンアミド美容液"></div>
+    <div class="field"><label>ブランド</label><input id="np-brand" value="${p.brand||''}" placeholder="例：COSRX"></div>
+    <div class="field"><label>種類</label><div class="chips" id="np-type" style="flex-wrap:wrap">${typeChips}</div></div>
+    <div class="field"><label>主な成分（カンマ区切り）</label><input id="np-ings" value="${(p.ings||[]).join(', ')}" placeholder="例：ナイアシンアミド, ヒアルロン酸"></div>
+    <div class="field"><label>開封</label><div class="seg" id="np-open">
+      <button class="on" onclick="pk('np-open',this);aOpen=true">今日 開封</button>
+      <button onclick="pk('np-open',this);aOpen=false">未開封</button></div></div>
+    <div class="field"><label>使用期限の目安 (PAO)</label><div class="seg" id="np-pao">
+      <button onclick="pk('np-pao',this);aPao=3">3M</button>
+      <button class="on" onclick="pk('np-pao',this);aPao=6">6M</button>
+      <button onclick="pk('np-pao',this);aPao=12">12M</button>
+      <button onclick="pk('np-pao',this);aPao=24">24M</button></div></div>
+    <button class="btn" onclick="saveProduct()">✓ 追加する</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="openAddProduct()">← 取り込み方法に戻る</button>`);
+}
+function pickType(el,t){aType=t;const meta=typeMeta(t);aCat=meta.cat;aEmo=meta.emo;document.querySelectorAll('#np-type .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function pk(id,el){document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+const CAT_EMO={skincare:'🧴',makeup:'💄',suncare:'☀️',hair:'💆'};
+const catLabel=c=>({skincare:'スキンケア',makeup:'メイク',suncare:'日焼け止め',hair:'ヘア',body:'ボディ'}[c]||c);
+function saveProduct(){
+  const name=document.getElementById('np-name').value.trim(); if(!name){toast('商品名を入れてください');return;}
+  const brand=document.getElementById('np-brand').value.trim()||'—';
+  const ings=document.getElementById('np-ings').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const meta=typeMeta(aType);
+  state.products.push({id:'p'+Math.random().toString(36).slice(2,8),name,brand,cat:meta.cat,type:aType,emo:aEmo||meta.emo,ings,opened:aOpen?new Date(today):null,pao:aPao,remaining:100});
+  closeSheet();invFilter='all';document.querySelectorAll('#inv-chips .chip').forEach(c=>c.classList.toggle('on',c.dataset.f==='all'));
+  renderInv();renderHome();go('inv');toast('✓ コスメを追加しました');
+}
+
+/* ---- log meal / workout ---- */
+const DISH_GUESSES=[
+ {n:'ワンプレート（主食＋主菜＋サラダ）',e:'🍽',k:[480,720],p:[22,38],f:[15,28],c:[45,80]},
+ {n:'パスタ',e:'🍝',k:[520,780],p:[16,26],f:[18,30],c:[60,95]},
+ {n:'ラーメン',e:'🍜',k:[450,800],p:[18,30],f:[14,28],c:[55,90]},
+ {n:'サラダボウル',e:'🥗',k:[250,420],p:[18,34],f:[10,22],c:[15,35]},
+ {n:'丼もの',e:'🍚',k:[520,760],p:[20,32],f:[12,24],c:[70,100]},
+ {n:'お弁当',e:'🍱',k:[500,720],p:[22,34],f:[16,26],c:[55,85]},
+ {n:'サンドイッチ／軽食',e:'🥪',k:[300,520],p:[12,22],f:[12,24],c:[35,60]},
+ {n:'スイーツ',e:'🍰',k:[280,460],p:[4,9],f:[12,24],c:[35,60]}
+];
+/* テキスト抽出用 食材辞書（無料・キーワード照合）。per=true は1個あたり */
+const FOOD_DB=[
+ {k:['チャーハン','炒飯'],n:'チャーハン',kcal:640,p:14,f:20,c:95},
+ {k:['ラーメン'],n:'ラーメン',kcal:500,p:18,f:18,c:65},
+ {k:['つけ麺'],n:'つけ麺',kcal:620,p:24,f:20,c:80},
+ {k:['うどん'],n:'うどん',kcal:340,p:10,f:5,c:62},
+ {k:['そば','蕎麦'],n:'そば',kcal:320,p:12,f:4,c:58},
+ {k:['パスタ','スパゲ'],n:'パスタ',kcal:520,p:16,f:16,c:72},
+ {k:['ピザ'],n:'ピザ',kcal:280,p:12,f:12,c:30,per:true},
+ {k:['カレー'],n:'カレー',kcal:700,p:20,f:25,c:90},
+ {k:['どんぶり'],n:'丼もの',kcal:650,p:24,f:18,c:90},
+ {k:['寿司','すし','握り'],n:'寿司(1貫)',kcal:50,p:3,f:1,c:8,per:true},
+ {k:['餃子','ぎょうざ'],n:'餃子',kcal:45,p:2,f:2,c:4,per:true},
+ {k:['からあげ','唐揚げ','から揚げ'],n:'からあげ',kcal:75,p:5,f:5,c:3,per:true},
+ {k:['ハンバーガー','バーガー'],n:'ハンバーガー',kcal:500,p:25,f:25,c:45},
+ {k:['ポテト','フライドポテト'],n:'ポテト',kcal:320,p:4,f:16,c:40},
+ {k:['ステーキ','牛肉'],n:'ステーキ',kcal:400,p:35,f:28,c:2},
+ {k:['鶏むね','胸肉','むね肉'],n:'鶏むね',kcal:170,p:35,f:3,c:0},
+ {k:['鶏','チキン'],n:'チキン',kcal:200,p:28,f:9,c:0},
+ {k:['魚','鮭','サーモン','さば','サバ'],n:'魚',kcal:180,p:22,f:9,c:0},
+ {k:['納豆'],n:'納豆',kcal:90,p:8,f:5,c:6},
+ {k:['豆腐'],n:'豆腐',kcal:80,p:7,f:5,c:2},
+ {k:['卵','たまご','玉子'],n:'卵',kcal:80,p:7,f:5,c:1,per:true},
+ {k:['サラダ'],n:'サラダ',kcal:90,p:3,f:5,c:8},
+ {k:['味噌汁','みそ汁'],n:'味噌汁',kcal:40,p:3,f:1,c:5},
+ {k:['ごはん','ご飯','白米','米','ライス'],n:'ごはん',kcal:240,p:4,f:1,c:55},
+ {k:['トースト','食パン','パン'],n:'パン',kcal:180,p:6,f:3,c:30},
+ {k:['おにぎり'],n:'おにぎり',kcal:180,p:3,f:1,c:40,per:true},
+ {k:['ヨーグルト'],n:'ヨーグルト',kcal:100,p:6,f:3,c:12},
+ {k:['バナナ'],n:'バナナ',kcal:90,p:1,f:0,c:23,per:true},
+ {k:['りんご','リンゴ'],n:'りんご',kcal:80,p:0,f:0,c:21,per:true},
+ {k:['プロテイン'],n:'プロテイン',kcal:120,p:24,f:2,c:3},
+ {k:['ビール'],n:'ビール',kcal:150,p:1,f:0,c:11,per:true},
+ {k:['ワイン'],n:'ワイン',kcal:90,p:0,f:0,c:3,per:true},
+ {k:['ハイボール','チューハイ','酎ハイ'],n:'お酒',kcal:120,p:0,f:0,c:5,per:true},
+ {k:['ラテ','カフェオレ'],n:'ラテ',kcal:120,p:6,f:5,c:12},
+ {k:['コーヒー','珈琲'],n:'コーヒー',kcal:10,p:0,f:0,c:1},
+ {k:['コーラ','ジュース','炭酸'],n:'ジュース',kcal:140,p:0,f:0,c:35},
+ {k:['チョコ'],n:'チョコ',kcal:250,p:3,f:15,c:28},
+ {k:['ケーキ'],n:'ケーキ',kcal:350,p:5,f:18,c:42,per:true},
+ {k:['アイス'],n:'アイス',kcal:200,p:3,f:11,c:24,per:true},
+ {k:['ポテチ','スナック'],n:'スナック',kcal:330,p:4,f:21,c:32},
+ {k:['焼きそば'],n:'焼きそば',kcal:540,p:14,f:18,c:78},{k:['お好み焼き'],n:'お好み焼き',kcal:550,p:20,f:24,c:60},
+ {k:['たこ焼き'],n:'たこ焼き',kcal:320,p:11,f:12,c:42},{k:['天ぷら','天麩羅'],n:'天ぷら',kcal:380,p:12,f:24,c:28},
+ {k:['天丼'],n:'天丼',kcal:680,p:18,f:18,c:105},{k:['カツ丼'],n:'カツ丼',kcal:870,p:30,f:32,c:110},
+ {k:['牛丼'],n:'牛丼',kcal:650,p:20,f:20,c:95},{k:['親子丼'],n:'親子丼',kcal:620,p:28,f:16,c:90},
+ {k:['海鮮丼'],n:'海鮮丼',kcal:520,p:30,f:8,c:80},{k:['うな丼','うなぎ','鰻'],n:'うなぎ',kcal:700,p:30,f:28,c:80},
+ {k:['とんかつ','トンカツ'],n:'とんかつ',kcal:450,p:25,f:28,c:18},{k:['生姜焼き','しょうが焼き'],n:'生姜焼き',kcal:400,p:24,f:24,c:14},
+ {k:['ハンバーグ'],n:'ハンバーグ',kcal:420,p:24,f:28,c:14},{k:['オムライス'],n:'オムライス',kcal:680,p:18,f:24,c:90},
+ {k:['ナポリタン'],n:'ナポリタン',kcal:600,p:16,f:18,c:90},{k:['グラタン'],n:'グラタン',kcal:480,p:18,f:26,c:42},
+ {k:['ドリア'],n:'ドリア',kcal:560,p:18,f:24,c:65},{k:['リゾット'],n:'リゾット',kcal:430,p:12,f:14,c:62},
+ {k:['シチュー'],n:'シチュー',kcal:380,p:16,f:20,c:32},{k:['麻婆豆腐','マーボー'],n:'麻婆豆腐',kcal:340,p:18,f:22,c:14},
+ {k:['酢豚'],n:'酢豚',kcal:420,p:18,f:22,c:36},{k:['エビチリ','えびチリ'],n:'エビチリ',kcal:300,p:20,f:14,c:20},
+ {k:['春巻き','春巻'],n:'春巻き',kcal:110,p:3,f:6,c:11,per:true},{k:['焼き鳥','焼鳥','やきとり'],n:'焼き鳥',kcal:80,p:7,f:5,c:1,per:true},
+ {k:['串カツ'],n:'串カツ',kcal:90,p:4,f:6,c:5,per:true},{k:['刺身','さしみ'],n:'刺身',kcal:150,p:24,f:5,c:1},
+ {k:['焼き魚','焼魚','焼き鮭'],n:'焼き魚',kcal:180,p:24,f:9,c:0},{k:['煮魚','煮付け'],n:'煮魚',kcal:200,p:22,f:8,c:6},
+ {k:['さんま','サンマ','秋刀魚'],n:'さんま',kcal:240,p:20,f:18,c:0},{k:['まぐろ','マグロ','鮪'],n:'まぐろ',kcal:120,p:26,f:1,c:0},
+ {k:['えび','エビ','海老'],n:'えび',kcal:90,p:18,f:1,c:0},{k:['いか','イカ','烏賊'],n:'いか',kcal:90,p:18,f:1,c:0},
+ {k:['たこ','タコ','蛸'],n:'たこ',kcal:80,p:16,f:1,c:0},{k:['ホタテ','帆立'],n:'ホタテ',kcal:80,p:14,f:1,c:3},
+ {k:['かに','カニ','蟹'],n:'かに',kcal:70,p:15,f:1,c:0},{k:['牡蠣','カキ'],n:'牡蠣',kcal:60,p:7,f:2,c:5},
+ {k:['ぶり','ブリ','鰤'],n:'ぶり',kcal:260,p:21,f:18,c:0},{k:['あじ','アジ','鯵'],n:'あじ',kcal:120,p:20,f:4,c:0},
+ {k:['ツナ','シーチキン'],n:'ツナ',kcal:130,p:16,f:7,c:0},{k:['ハム'],n:'ハム',kcal:40,p:4,f:3,c:0,per:true},
+ {k:['ベーコン'],n:'ベーコン',kcal:80,p:3,f:8,c:0,per:true},{k:['ソーセージ','ウインナー'],n:'ソーセージ',kcal:60,p:3,f:5,c:1,per:true},
+ {k:['豚バラ','豚肉','ぶた'],n:'豚肉',kcal:250,p:18,f:20,c:0},{k:['ローストビーフ'],n:'ローストビーフ',kcal:200,p:24,f:11,c:1},
+ {k:['焼肉','焼き肉'],n:'焼肉',kcal:500,p:30,f:38,c:6},{k:['つくね'],n:'つくね',kcal:90,p:6,f:6,c:3,per:true},
+ {k:['厚揚げ','油揚げ','あぶらあげ'],n:'厚揚げ',kcal:150,p:11,f:11,c:2},{k:['枝豆','えだまめ'],n:'枝豆',kcal:120,p:11,f:6,c:9},
+ {k:['ひじき'],n:'ひじき煮',kcal:90,p:3,f:5,c:9},{k:['きんぴら'],n:'きんぴら',kcal:90,p:2,f:5,c:11},
+ {k:['キムチ'],n:'キムチ',kcal:30,p:2,f:0,c:6},{k:['漬物','つけもの'],n:'漬物',kcal:20,p:1,f:0,c:4},
+ {k:['わかめ','ワカメ'],n:'わかめ',kcal:15,p:1,f:0,c:2},{k:['もずく'],n:'もずく',kcal:10,p:0,f:0,c:2},
+ {k:['ほうれん草','ほうれんそう'],n:'ほうれん草',kcal:25,p:3,f:0,c:3},{k:['ブロッコリー'],n:'ブロッコリー',kcal:40,p:4,f:0,c:7},
+ {k:['アボカド'],n:'アボカド',kcal:190,p:2,f:18,c:6,per:true},{k:['トマト'],n:'トマト',kcal:30,p:1,f:0,c:7,per:true},
+ {k:['きゅうり','キュウリ'],n:'きゅうり',kcal:15,p:1,f:0,c:3,per:true},{k:['キャベツ'],n:'キャベツ',kcal:25,p:1,f:0,c:5},
+ {k:['じゃがいも','ジャガイモ','ポテト'],n:'じゃがいも',kcal:80,p:2,f:0,c:18,per:true},{k:['さつまいも','サツマイモ'],n:'さつまいも',kcal:140,p:1,f:0,c:33,per:true},
+ {k:['かぼちゃ','カボチャ'],n:'かぼちゃ',kcal:90,p:2,f:0,c:21},{k:['とうもろこし','コーン'],n:'コーン',kcal:90,p:3,f:1,c:18,per:true},
+ {k:['なす','ナス','茄子'],n:'なす',kcal:20,p:1,f:0,c:5,per:true},{k:['だいこん','大根'],n:'大根',kcal:18,p:0,f:0,c:4},
+ {k:['きのこ','しいたけ','しめじ','えのき','まいたけ'],n:'きのこ',kcal:20,p:2,f:0,c:4},
+ {k:['みかん','ミカン'],n:'みかん',kcal:40,p:0,f:0,c:11,per:true},{k:['いちご','イチゴ','苺'],n:'いちご',kcal:35,p:1,f:0,c:8},
+ {k:['ぶどう','ブドウ','葡萄'],n:'ぶどう',kcal:60,p:0,f:0,c:16},{k:['キウイ'],n:'キウイ',kcal:50,p:1,f:0,c:13,per:true},
+ {k:['オレンジ'],n:'オレンジ',kcal:60,p:1,f:0,c:15,per:true},{k:['パイナップル','パイン'],n:'パイナップル',kcal:55,p:0,f:0,c:14},
+ {k:['メロン'],n:'メロン',kcal:45,p:1,f:0,c:11},{k:['すいか','スイカ','西瓜'],n:'すいか',kcal:40,p:1,f:0,c:10},
+ {k:['桃','もも'],n:'桃',kcal:40,p:1,f:0,c:10,per:true},{k:['梨','なし'],n:'梨',kcal:50,p:0,f:0,c:13,per:true},
+ {k:['柿','かき'],n:'柿',kcal:60,p:0,f:0,c:16,per:true},{k:['ブルーベリー'],n:'ブルーベリー',kcal:50,p:1,f:0,c:13},
+ {k:['牛乳','ミルク'],n:'牛乳',kcal:130,p:7,f:8,c:10},{k:['豆乳'],n:'豆乳',kcal:90,p:7,f:4,c:5},
+ {k:['チーズ'],n:'チーズ',kcal:60,p:4,f:5,c:0,per:true},{k:['バター'],n:'バター',kcal:90,p:0,f:10,c:0},
+ {k:['生クリーム','ホイップ'],n:'生クリーム',kcal:100,p:1,f:10,c:2},{k:['プリン'],n:'プリン',kcal:150,p:4,f:6,c:20,per:true},
+ {k:['ゼリー'],n:'ゼリー',kcal:80,p:1,f:0,c:19,per:true},{k:['クッキー','ビスケット'],n:'クッキー',kcal:60,p:1,f:3,c:8,per:true},
+ {k:['ドーナツ'],n:'ドーナツ',kcal:250,p:4,f:13,c:30,per:true},{k:['クロワッサン'],n:'クロワッサン',kcal:230,p:5,f:13,c:24,per:true},
+ {k:['あんぱん','あんパン'],n:'あんぱん',kcal:280,p:7,f:5,c:52,per:true},{k:['メロンパン'],n:'メロンパン',kcal:350,p:7,f:13,c:52,per:true},
+ {k:['菓子パン','クリームパン'],n:'菓子パン',kcal:300,p:6,f:11,c:44,per:true},{k:['パンケーキ','ホットケーキ'],n:'パンケーキ',kcal:330,p:8,f:10,c:52},
+ {k:['ワッフル'],n:'ワッフル',kcal:230,p:4,f:11,c:28,per:true},{k:['大福','だいふく'],n:'大福',kcal:120,p:2,f:0,c:27,per:true},
+ {k:['だんご','団子'],n:'だんご',kcal:60,p:1,f:0,c:13,per:true},{k:['どら焼き','どらやき'],n:'どら焼き',kcal:240,p:6,f:3,c:48,per:true},
+ {k:['たい焼き','たいやき'],n:'たい焼き',kcal:210,p:5,f:2,c:43,per:true},{k:['まんじゅう','饅頭'],n:'まんじゅう',kcal:110,p:2,f:0,c:25,per:true},
+ {k:['せんべい','煎餅'],n:'せんべい',kcal:90,p:2,f:1,c:19,per:true},{k:['飴','あめ','キャンディ'],n:'飴',kcal:20,p:0,f:0,c:5,per:true},
+ {k:['ナッツ','アーモンド','ミックスナッツ'],n:'ナッツ',kcal:180,p:6,f:15,c:6},{k:['フライドチキン','ケンタ'],n:'フライドチキン',kcal:240,p:18,f:15,c:8,per:true},
+ {k:['ナゲット'],n:'ナゲット',kcal:50,p:3,f:3,c:3,per:true},{k:['カップ麺','カップラーメン','インスタント'],n:'カップ麺',kcal:400,p:9,f:16,c:55},
+ {k:['おでん'],n:'おでん',kcal:300,p:18,f:8,c:35},{k:['すき焼き','すきやき'],n:'すき焼き',kcal:600,p:30,f:38,c:30},
+ {k:['しゃぶしゃぶ'],n:'しゃぶしゃぶ',kcal:450,p:32,f:28,c:10},{k:['鍋','なべ','水炊き'],n:'鍋',kcal:400,p:28,f:18,c:24},
+ {k:['餅','もち','お餅'],n:'餅',kcal:120,p:2,f:0,c:27,per:true},{k:['雑炊','おじや'],n:'雑炊',kcal:200,p:8,f:2,c:38},
+ {k:['お茶漬け','茶漬け'],n:'お茶漬け',kcal:180,p:5,f:1,c:38},{k:['卵かけご飯','TKG'],n:'卵かけご飯',kcal:320,p:11,f:6,c:56},
+ {k:['コーンスープ','ポタージュ'],n:'スープ',kcal:120,p:3,f:5,c:16},{k:['ホットドッグ'],n:'ホットドッグ',kcal:320,p:11,f:16,c:32,per:true},
+ {k:['タコス'],n:'タコス',kcal:200,p:8,f:11,c:18,per:true},{k:['緑茶','お茶','紅茶','麦茶','水'],n:'お茶・水',kcal:0,p:0,f:0,c:0},
+ {k:['スポーツドリンク','ポカリ','アクエリ'],n:'スポーツドリンク',kcal:100,p:0,f:0,c:25},{k:['野菜ジュース'],n:'野菜ジュース',kcal:70,p:1,f:0,c:16},
+ {k:['スムージー'],n:'スムージー',kcal:180,p:4,f:2,c:38},{k:['タピオカ','ミルクティー'],n:'タピオカ',kcal:280,p:3,f:6,c:54},
+ {k:['日本酒','清酒'],n:'日本酒',kcal:100,p:0,f:0,c:4,per:true},{k:['焼酎'],n:'焼酎',kcal:70,p:0,f:0,c:0,per:true},
+ {k:['レモンサワー','サワー','酎ハイ','チューハイ'],n:'サワー',kcal:120,p:0,f:0,c:8,per:true},{k:['梅酒'],n:'梅酒',kcal:160,p:0,f:0,c:21,per:true},
+ {k:['ウイスキー','ハイボール'],n:'ウイスキー',kcal:110,p:0,f:0,c:0,per:true}
+];
+const rnd=(a,b)=>Math.round(a+Math.random()*(b-a));
+function extractMeal(text){
+  let t=' '+(text||'').replace(/\n/g,' ')+' ';
+  const items=[];
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const CNT='(個|つ|杯|本|枚|貫|缶|皿|切れ|玉|人前)?';
+  const ordered=[...FOOD_DB].sort((a,b)=>Math.max(...b.k.map(s=>s.length))-Math.max(...a.k.map(s=>s.length)));
+  ordered.forEach(f=>{
+    let matched=null,qty=1;
+    for(const k of f.k){const idx=t.indexOf(k);if(idx<0)continue;matched=k;
+      const after=t.slice(idx+k.length,idx+k.length+5);
+      const ma=after.match(new RegExp('^\\s*(\\d+)\\s*'+CNT));
+      if(ma)qty=parseInt(ma[1]);break;}
+    if(!matched)return;
+    qty=Math.min(20,Math.max(1,qty));
+    if(!f.per)qty=Math.min(qty,3);
+    items.push({n:f.n+(f.per&&qty>1?`×${qty}`:''),kcal:f.kcal*qty,p:f.p*qty,f:f.f*qty,c:f.c*qty});
+    f.k.forEach(k=>{t=t.replace(new RegExp(esc(k)+'\\s*\\d*\\s*'+CNT,'g'),' ');});
+  });
+  const total=items.reduce((a,x)=>({k:a.k+x.kcal,p:a.p+x.p,f:a.f+x.f,c:a.c+x.c}),{k:0,p:0,f:0,c:0});
+  return {items,total};
+}
+let pendingMeal=null;
+function openLogMeal(){
+  pendingMeal=null;
+  openSheet(`<div class="stitle">食事を記録</div><div class="ssub">テキストで書く・写真でAI推定・リストから、の3通り。</div>
+    <div class="field" style="margin-bottom:8px"><label>✍️ テキストで記録（食べたものを適当に）</label>
+      <input id="meal-text" placeholder="例：ラーメン 餃子5個 ビール">　</div>
+    <div style="display:flex;gap:8px"><button class="btn sm" style="flex:1" onclick="onMealText()">🔎 辞書で抽出</button><button class="btn ghost sm" style="flex:1" onclick="offMealSearch()">🌐 ネットで探す</button></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="aiExtractMeal()">🤖 AIで抽出（Gemini・無料枠）</button>
+    <div id="meal-text-result"></div>
+    <input type="file" accept="image/*" capture="environment" id="meal-input" style="display:none" onchange="onMealPhoto(event)">
+    <button class="btn ghost sm" style="margin-top:12px" onclick="document.getElementById('meal-input').click()">📷 写真でAI推定</button>
+    <div id="meal-result"></div>
+    <div class="label" style="margin:18px 2px 8px">またはリストから</div>
+    <div id="ml-list">${MEALS.slice(0,6).map((m,i)=>`<div class="sugg" onclick="logMeal(${MEALS.indexOf(m)})"><div class="sugg-ico">${m.e}</div><div class="sugg-b"><div class="sugg-n">${m.n}</div><div class="sugg-m">P${m.p} F${m.f} C${m.c} ・ ${m.t}</div></div><div class="sugg-k">${m.k}<small>kcal</small></div></div>`).join('')}</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="closeSheet()">閉じる</button>`);
+}
+function onMealText(){
+  const text=(document.getElementById('meal-text').value||'').trim();
+  const res=document.getElementById('meal-text-result');
+  if(!text){res.innerHTML='';toast('食べたものを入力してください');return;}
+  const {items,total}=extractMeal(text);
+  if(!items.length){res.innerHTML=`<div class="card flat" style="padding:14px;margin-top:10px"><div class="ssub">食材を認識できませんでした。別の言い方を試すか、写真/リストをどうぞ。</div></div>`;pendingMeal=null;return;}
+  pendingMeal={n:`テキスト抽出（${items.length}品）`,e:'✍️',k:total.k,p:total.p,f:total.f,c:total.c};
+  res.innerHTML=`<div class="card flat" style="padding:14px;margin-top:10px">
+    <div class="label" style="margin:0 0 8px">抽出した品目</div>
+    ${items.map(x=>`<div class="row" style="padding:5px 0"><span style="font-size:13px">${x.n}</span><span style="font-size:12.5px;color:var(--ink2)">${x.kcal}kcal</span></div>`).join('')}
+    <div class="divider" style="margin:8px 0"></div>
+    <div class="row"><b>合計</b><b style="color:var(--accent-d)" id="me-total">約${total.k}kcal</b></div>
+    <div class="sugg-m" style="margin-top:2px">P${total.p} ・ F${total.f} ・ C${total.c}</div>
+    <div class="row" style="margin-top:12px;gap:10px">
+      <button class="btn sm" style="flex:1" onclick="logMealEst()">✓ これで記録</button>
+      <div class="stepper"><button onclick="adjMealEst(-50)">−</button><b id="me-k" class="serif" style="font-size:18px;min-width:64px;text-align:center;display:inline-block">${total.k}</b><button onclick="adjMealEst(50)">＋</button></div>
+    </div></div>`;
+}
+function onMealPhoto(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const res=document.getElementById('meal-result');
+    res.innerHTML=`<div style="margin-top:14px"><img src="${r.result}" style="width:100%;max-height:180px;object-fit:cover;border-radius:14px"><div class="ssub" style="text-align:center;margin-top:8px">🤖 AIが解析中…</div></div>`;
+    setTimeout(()=>{
+      const g=DISH_GUESSES[Math.floor(Math.random()*DISH_GUESSES.length)];
+      const est={n:g.n,e:g.e,k:rnd(g.k[0],g.k[1]),p:rnd(g.p[0],g.p[1]),f:rnd(g.f[0],g.f[1]),c:rnd(g.c[0],g.c[1]),conf:78+Math.floor(Math.random()*15)};
+      pendingMeal=est;
+      res.innerHTML=`<div style="margin-top:14px"><img src="${r.result}" style="width:100%;max-height:180px;object-fit:cover;border-radius:14px"></div>
+        <div class="card flat" style="padding:14px;margin-top:10px">
+          <div class="row" style="margin-bottom:6px"><div style="font-weight:600">${est.e} 推定：${est.n}</div><div style="font-size:11px;color:var(--faint)">信頼度 ${est.conf}%</div></div>
+          <div class="sugg-m">約 <b style="color:var(--accent-d)">${est.k}kcal</b> ・ P${est.p} F${est.f} C${est.c}</div>
+          <div class="row" style="margin-top:12px;gap:10px">
+            <button class="btn sm" style="flex:1" onclick="logMealEst()">✓ これで記録</button>
+            <div class="stepper"><button onclick="adjMealEst(-50)">−</button><b id="me-k" class="serif" style="font-size:18px;min-width:64px;text-align:center;display:inline-block">${est.k}</b><button onclick="adjMealEst(50)">＋</button></div>
+          </div>
+        </div>`;
+    },1700);
+  };
+  r.readAsDataURL(f);
+}
+function adjMealEst(d){if(!pendingMeal)return;pendingMeal.k=Math.max(0,pendingMeal.k+d);const el=document.getElementById('me-k');if(el)el.textContent=pendingMeal.k;const t=document.getElementById('me-total');if(t)t.textContent='約'+pendingMeal.k+'kcal';}
+function logMealEst(){if(!pendingMeal)return;const m=pendingMeal;state.diet.intake+=m.k;state.diet.pfc.p+=m.p;state.diet.pfc.f+=m.f;state.diet.pfc.c+=m.c;pendingMeal=null;closeSheet();renderDiet();renderHome();go('diet');toast(`✓ ${m.n} を記録（+${m.k}kcal）`);}
+function logMeal(i){const m=MEALS[i];state.diet.intake+=m.k;state.diet.pfc.p+=m.p;state.diet.pfc.f+=m.f;state.diet.pfc.c+=m.c;closeSheet();renderDiet();renderHome();go('diet');toast(`✓ ${m.n} を記録（+${m.k}kcal）`);}
+/* Open Food Facts（無料・キー不要）で食品検索 */
+async function offFood(q){
+  const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=6&fields=product_name,product_name_ja,brands,nutriments`;
+  const r=await fetch(url); const j=await r.json();
+  return (j.products||[]).map(p=>{const n=p.nutriments||{};const kcal=Math.round(n['energy-kcal_100g']||0);
+    return {name:p.product_name_ja||p.product_name||'',brand:(p.brands||'').split(',')[0]||'',kcal100:kcal,p:Math.round(n.proteins_100g||0),f:Math.round(n.fat_100g||0),c:Math.round(n.carbohydrates_100g||0)};
+  }).filter(x=>x.name&&x.kcal100>0);
+}
+async function offMealSearch(){
+  const q=(document.getElementById('meal-text').value||'').trim(); if(!q){toast('品名を入力してください');return;}
+  const res=document.getElementById('meal-text-result'); res.innerHTML='<div class="ssub" style="margin-top:10px">🌐 Open Food Facts を検索中…</div>';
+  try{
+    const list=await offFood(q);
+    if(!list.length){res.innerHTML='<div class="card flat" style="padding:14px;margin-top:10px"><div class="ssub">ネットでも見つかりませんでした。辞書抽出か手入力をどうぞ。</div></div>';return;}
+    res.innerHTML='<div class="card flat" style="padding:14px;margin-top:10px"><div class="label" style="margin:0 0 8px">ネットの候補（100gあたり目安）</div>'+
+      list.map(x=>`<div class="sugg" onclick='pickOffFood(${JSON.stringify(x).replace(/'/g,"&#39;")})'><div class="sugg-ico">🍴</div><div class="sugg-b"><div class="sugg-n">${x.name}</div><div class="sugg-m">${x.brand} P${x.p} F${x.f} C${x.c}/100g</div></div><div class="sugg-k">${x.kcal100}<small>kcal</small></div></div>`).join('')+'</div>';
+  }catch(e){res.innerHTML='<div class="card flat" style="padding:14px;margin-top:10px"><div class="ssub">検索できませんでした（プレビューの通信制限の可能性）。実機では動きます。</div></div>';}
+}
+function pickOffFood(x){pendingMeal={n:x.name,e:'🍴',k:x.kcal100,p:x.p,f:x.f,c:x.c};
+  document.getElementById('meal-text-result').innerHTML=`<div class="card flat" style="padding:14px;margin-top:10px"><div class="row"><b>${x.name}</b><b style="color:var(--accent-d)" id="me-total">約${x.kcal100}kcal</b></div><div class="sugg-m" style="margin-top:2px">100gあたり目安 ・ P${x.p} F${x.f} C${x.c}</div><div class="row" style="margin-top:12px;gap:10px"><button class="btn sm" style="flex:1" onclick="logMealEst()">✓ これで記録</button><div class="stepper"><button onclick="adjMealEst(-50)">−</button><b id="me-k" class="serif" style="font-size:18px;min-width:64px;text-align:center;display:inline-block">${x.kcal100}</b><button onclick="adjMealEst(50)">＋</button></div></div></div>`;
+}
+/* Gemini（無料枠）でAI抽出。キーは画面内のみ保持。本番はサーバー側へ。 */
+let geminiKey='';
+function openGeminiKey(){
+  openSheet(`<div class="stitle">AI抽出（Gemini）を使う</div>
+    <div class="ssub">GoogleのGeminiは無料枠（AI Studioのキー・クレカ不要）で使えます。キーを貼ると、辞書に無い料理も文章からAIが推定します。</div>
+    <div class="field"><label>Gemini APIキー</label><input id="gk" placeholder="AIza...（AI Studioで無料発行）"></div>
+    <div class="dcaution" style="display:block">⚠ 無料枠は送信内容がGoogleの改善に使われる場合あり。機微な情報は送らないで。デモではキーは画面内のみ保持（リロードで消える）。本番はキーをサーバー側に置いてください。</div>
+    <button class="btn" style="margin-top:14px" onclick="saveGeminiKey()">保存して使う</button>
+    <button class="btn ghost sm" style="margin-top:8px" onclick="openLogMeal()">← 戻る</button>`);
+}
+function saveGeminiKey(){geminiKey=(document.getElementById('gk').value||'').trim();if(!geminiKey){toast('キーを入力してください');return;}closeSheet();openLogMeal();toast('✓ AI抽出が使えます');}
+async function aiExtractMeal(){
+  const q=(document.getElementById('meal-text').value||'').trim(); if(!q){toast('食べたものを入力してください');return;}
+  if(!geminiKey){openGeminiKey();return;}
+  const res=document.getElementById('meal-text-result'); res.innerHTML='<div class="ssub" style="margin-top:10px">🤖 Geminiが推定中…</div>';
+  try{
+    const prompt='次の食事の説明から推定カロリーとPFC(g)を計算し、JSONのみ出力（前後の説明やコードブロックは不要）。形式: {"items":[{"name":"","kcal":0,"p":0,"f":0,"c":0}],"total":{"k":0,"p":0,"f":0,"c":0}} 。説明:「'+q+'」';
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(geminiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const j=await r.json();
+    let txt='';
+    if(j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0])txt=j.candidates[0].content.parts[0].text||'';
+    const data=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const items=data.items||[]; const total=data.total||items.reduce((a,x)=>({k:a.k+ (x.kcal||0),p:a.p+(x.p||0),f:a.f+(x.f||0),c:a.c+(x.c||0)}),{k:0,p:0,f:0,c:0});
+    if(!items.length)throw 0;
+    pendingMeal={n:`AI抽出（${items.length}品）`,e:'🤖',k:Math.round(total.k),p:Math.round(total.p),f:Math.round(total.f),c:Math.round(total.c)};
+    res.innerHTML=`<div class="card flat" style="padding:14px;margin-top:10px">
+      <div class="label" style="margin:0 0 8px">🤖 AIの推定</div>
+      ${items.map(x=>`<div class="row" style="padding:5px 0"><span style="font-size:13px">${x.name}</span><span style="font-size:12.5px;color:var(--ink2)">${Math.round(x.kcal||0)}kcal</span></div>`).join('')}
+      <div class="divider" style="margin:8px 0"></div>
+      <div class="row"><b>合計</b><b style="color:var(--accent-d)" id="me-total">約${pendingMeal.k}kcal</b></div>
+      <div class="sugg-m" style="margin-top:2px">P${pendingMeal.p} ・ F${pendingMeal.f} ・ C${pendingMeal.c}</div>
+      <div class="row" style="margin-top:12px;gap:10px"><button class="btn sm" style="flex:1" onclick="logMealEst()">✓ これで記録</button>
+        <div class="stepper"><button onclick="adjMealEst(-50)">−</button><b id="me-k" class="serif" style="font-size:18px;min-width:64px;text-align:center;display:inline-block">${pendingMeal.k}</b><button onclick="adjMealEst(50)">＋</button></div></div></div>`;
+  }catch(e){res.innerHTML='<div class="card flat" style="padding:14px;margin-top:10px"><div class="ssub">AI抽出に失敗（キー/通信/制限/プレビューのCSPの可能性）。辞書抽出かネット検索をどうぞ。</div></div>';}
+}
+function openLogWork(){
+  openSheet(`<div class="stitle">運動を記録</div><div class="ssub">メニューを選ぶと消費カロリーを加算します。</div>
+    <div>${WORKS.slice(0,6).map((w,i)=>`<div class="sugg" onclick="logWork(${WORKS.indexOf(w)})"><div class="sugg-ico">${w.e}</div><div class="sugg-b"><div class="sugg-n">${w.n}</div><div class="sugg-m">${w.note} ・ ${w.t}</div></div><div class="sugg-k">${w.k}<small>kcal</small></div></div>`).join('')}</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="closeSheet()">閉じる</button>`);
+}
+function logWork(i){const w=WORKS[i];state.diet.burn+=w.k;closeSheet();renderDiet();renderHome();go('diet');toast(`✓ ${w.n} を記録（+${w.k}kcal消費）`);}
+
+/* toast */
+let tT=null;
+function toast(m){const o=document.querySelector('.toast');if(o)o.remove();const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);clearTimeout(tT);tT=setTimeout(()=>t.remove(),2200);}
+
+/* ===== 永続化（localStorage / IndexedDB）— 本番PWAで保存、プレビューでは自動で無効化 ===== */
+const LS_KEY='vita-beauty-v1';
+function hasLS(){try{return typeof localStorage!=='undefined'&&localStorage;}catch(e){return null;}}
+function persist(){
+  const ls=hasLS(); if(!ls)return;
+  const snap={v:1,products:state.products,skinLogs:state.skinLogs,diary:state.diary,diet:state.diet,
+    cycle:state.cycle,supplements:state.supplements,weightHistory:state.weightHistory,weather:state.weather,
+    profile:state.profile,health:state.health,workoutQueue:state.workoutQueue,streak:state.streak,doneToday:state.doneToday,photos:state.photos};
+  try{ls.setItem(LS_KEY,JSON.stringify(snap));}
+  catch(e){ try{snap.photos=[]; ls.setItem(LS_KEY,JSON.stringify(snap));}catch(_){ } } // 容量超過時は写真を外す
+}
+function loadState(){
+  const ls=hasLS(); if(!ls)return false;
+  try{
+    const raw=ls.getItem(LS_KEY); if(!raw)return false;
+    const d=JSON.parse(raw,(k,v)=>(typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v))?new Date(v):v);
+    ['products','skinLogs','diary','supplements','weightHistory','photos','workoutQueue'].forEach(k=>{if(Array.isArray(d[k]))state[k]=d[k];});
+    ['diet','cycle','weather','profile','health'].forEach(k=>{if(d[k]&&typeof d[k]==='object')state[k]=Object.assign(state[k]||{},d[k]);});
+    if(typeof d.streak==='number')state.streak=d.streak;
+    if(typeof d.doneToday==='number')state.doneToday=d.doneToday;
+    return true;
+  }catch(e){return false;}
+}
+function resetData(){const ls=hasLS();if(ls){try{ls.removeItem(LS_KEY);}catch(e){}}location.reload&&location.reload();}
+
+/* init */
+(function(){
+  const loaded=loadState();
+  const hk=ingestHealthFromURL();
+  const wd=['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  document.getElementById('hd-wd').textContent=wd[today.getDay()];
+  document.getElementById('hd-d').textContent=`${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  refreshMeals();
+  renderHome(); renderSkin(); renderInv(); renderDiet();
+  setTimeout(()=>{document.getElementById('splash').classList.add('hide');
+    if(hk)toast('🔗 ヘルスケアを自動取り込みしました');
+    else if(!state.profile.done)setTimeout(openOnboarding,750);},1600);
+  // 自動保存
+  try{
+    setInterval(persist,2500);
+    window.addEventListener('beforeunload',persist);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();});
+  }catch(e){}
+  // PWA: Service Worker 登録（配布時のみ有効・プレビューでは無視）
+  try{ if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js').catch(()=>{});} }catch(e){}
+})();
+</script>
+</body>
+</html>
